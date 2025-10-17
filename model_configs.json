@@ -1,0 +1,28 @@
+[
+    {
+        "config_name": "qwen-80b",
+        "model_type": "openai_chat",
+        "model_name": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+        "api_key": "${MODELSCOPE_API_KEY}",
+        "client_args": {
+            "base_url": "https://api-inference.modelscope.cn/v1"
+        },
+        "temperature": 0.1,
+        "max_tokens": 4000,
+        "top_p": 0.9,
+        "timeout": 60
+    },
+    {
+        "config_name": "qwen-235b",
+        "model_type": "openai_chat",
+        "model_name": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+        "api_key": "${MODELSCOPE_API_KEY}",
+        "client_args": {
+            "base_url": "https://api-inference.modelscope.cn/v1"
+        },
+        "temperature": 0.1,
+        "max_tokens": 4000,
+        "top_p": 0.9,
+        "timeout": 60
+    }
+]
