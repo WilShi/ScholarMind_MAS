@@ -268,7 +268,7 @@ class ReportGenerator:
 
         conclusion = self._extract_section_content(paper_content, "conclusion")
 
-        return self.templates["detailed_report"].format(
+        result = self.templates["detailed_report"].format(
             title=title,
             authors=authors,
             abstract=abstract,
@@ -279,6 +279,7 @@ class ReportGenerator:
             limitations=limitations,
             conclusion=conclusion,
         )
+        return result
 
     def _extract_contributions(self, paper_content: PaperContent) -> str:
         """提取主要贡献"""
@@ -413,15 +414,18 @@ class ReportGenerator:
 
         if user_background == "beginner":
 
-            return self.templates["beginner_friendly"]
+            result = self.templates["beginner_friendly"]
+            return result
 
         elif user_background == "researcher":
 
-            return self.templates["detailed_report"]
+            result = self.templates["detailed_report"]
+            return result
 
         else:
 
-            return self.templates["executive_summary"]
+            result = self.templates["executive_summary"]
+            return result
 
     def _format_authors(self, authors: List[str]) -> str:
         """格式化作者列表"""

@@ -286,7 +286,11 @@ class AcademicSearcher:
                 # 添加延迟以避免请求过于频繁
                 time.sleep(self.request_delay)
 
-                return response.json()
+                result = response.json()
+                if isinstance(result, dict):
+                    return result
+                else:
+                    return {"data": result}
 
             except requests.exceptions.RequestException as e:
                 tool_logger.debug(f"Request attempt {attempt + 1} failed: {e}")

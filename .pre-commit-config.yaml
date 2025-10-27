@@ -65,6 +65,7 @@ repos:
     rev: 1.8.0
     hooks:
       - id: bandit
+        pass_filenames: false
         args: ['-r', 'scholarmind/', '-ll']
         exclude: ^tests/
 

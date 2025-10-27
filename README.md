@@ -36,7 +36,7 @@ ScholarMind（智读）是一个先进的多智能体协作系统，旨在将复
 - **零LLM参数收集**：在交互模式下，参数收集阶段不调用LLM，节省API资源
 - **结构化输出**：生成包含标题、摘要、关键贡献、洞察等结构化内容的报告
 - **生产就绪**：完整的CI/CD流水线、日志管理系统和错误处理
-- **开发友好**：Pre-commit hooks、类型检查、代码覆盖率报告
+- **开发友好**：Pre-commit hooks、类型检查、代码覆盖率报告、全面的测试套件
 
 ## 系统架构
 
@@ -177,7 +177,23 @@ MODELSCOPE_API_KEY=your-modelscope-api-key
 SEMANTIC_SCHOLAR_API_KEY=your-semantic-scholar-api-key
 ```
 
+## 版本信息
+
+当前版本：**0.2.0** (详见 [CHANGELOG.md](CHANGELOG.md))
+
 ## 开发指南
+
+### 代码质量工具
+
+项目使用以下工具确保代码质量：
+
+- **Black** - 代码格式化（行长度限制100字符）
+- **isort** - 导入语句排序
+- **flake8** - 代码风格检查
+- **mypy** - 静态类型检查
+- **pytest** - 测试框架，支持覆盖率报告
+- **pre-commit** - Git提交前检查钩子
+- **bandit** - 安全检查
 
 ### 项目结构
 
@@ -258,7 +274,24 @@ python -m pytest
 
 # 运行特定测试文件
 python -m pytest scholarmind/tests/test_basic_functionality.py
+
+# 生成测试覆盖率报告
+python -m pytest --cov=scholarmind --cov-report=html
+
+# 运行代码质量检查
+flake8 scholarmind/
+mypy scholarmind/
+black --check scholarmind/
+isort --check-only scholarmind/
 ```
+
+### 测试覆盖范围
+
+- 基础功能测试（论文解析、元数据提取）
+- 智能体单元测试（各智能体核心功能）
+- 集成测试（完整工作流测试）
+- 错误处理测试
+- 输入验证测试
 
 ## 许可证
 

@@ -4,12 +4,10 @@ Interactive Agent for ScholarMind
 """
 
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from agentscope.agent import AgentBase, UserAgent
 from agentscope.message import Msg
-
-from config import get_model_config
 
 
 class InteractiveScholarAgent(AgentBase):

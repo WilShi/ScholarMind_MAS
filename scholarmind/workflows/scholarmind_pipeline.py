@@ -4,9 +4,7 @@ ScholarMind Pipeline
 """
 
 # 导入增强版本的工作流
-from .scholarmind_enhanced_pipeline import (
-    ScholarMindEnhancedPipeline,
-)
+from .scholarmind_enhanced_pipeline import ScholarMindEnhancedPipeline
 from .scholarmind_enhanced_pipeline import create_pipeline as _create_enhanced_pipeline
 
 # 向后兼容的别名

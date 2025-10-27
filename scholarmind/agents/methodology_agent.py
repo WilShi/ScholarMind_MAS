@@ -7,8 +7,6 @@ import json
 import time
 from typing import Any, Dict
 
-from agentscope.message import Msg
-
 from ..agents.base_agent import ScholarMindAgentBase
 from ..utils.logger import agent_logger
 
@@ -20,7 +18,10 @@ class MethodologyAgent(ScholarMindAgentBase):
         # Initialize base class with proper name parameter
         super().__init__(
             name="MethodologyAgent",
-            sys_prompt="You are an expert in analyzing academic papers' methodologies, algorithms, and technical innovations.",
+            sys_prompt=(
+                "You are an expert in analyzing academic papers' methodologies, "
+                "algorithms, and technical innovations."
+            ),
             **kwargs,
         )
 
@@ -123,22 +124,27 @@ class MethodologyAgent(ScholarMindAgentBase):
         language_instruction = {"zh": "Chinese (中文)", "en": "English"}[output_language]
 
         # Create prompt for LLM
-        prompt = f"""You are analyzing the methodology of an academic paper. Please provide a deep technical analysis.
-
-{paper_context}
-
-Please provide a comprehensive methodology analysis in JSON format with the following structure:
-{{
-    "architecture_analysis": "Detailed breakdown of the model/system architecture (2-3 paragraphs)",
-    "algorithm_flow": "Step-by-step explanation of the algorithm flow and key procedures (2-3 paragraphs)",
-    "innovation_points": ["innovation 1", "innovation 2", "innovation 3"],
-    "related_work_comparison": "Comparison with related work and what makes this approach unique (1-2 paragraphs)",
-    "technical_details": "Important technical details, design choices, and rationale (2-3 paragraphs)",
-    "complexity_analysis": "Computational and space complexity analysis if applicable (optional)",
-    "mathematical_formulation": "Key mathematical formulations or equations explained (optional)"
-}}
-
-**Important**: Respond ONLY with valid JSON, no additional text. Please write all content in {language_instruction}."""
+        prompt = f"""You are analyzing the methodology of an academic paper. "
+            f"Please provide a deep technical analysis.\n\n{paper_context}\n\n"
+            f"Please provide a comprehensive methodology analysis in JSON format "
+            f"with the following structure:\n"
+            f"{{\n"
+            f'    "architecture_analysis": "Detailed breakdown of the model/system '
+            f'architecture (2-3 paragraphs)",\n'
+            f'    "algorithm_flow": "Step-by-step explanation of the algorithm flow '
+            f'and key procedures (2-3 paragraphs)",\n'
+            f'    "innovation_points": ["innovation 1", "innovation 2", "innovation 3"],\n'
+            f'    "related_work_comparison": "Comparison with related work and '
+            f'what makes this approach unique (1-2 paragraphs)",\n'
+            f'    "technical_details": "Important technical details, design choices, '
+            f'and rationale (2-3 paragraphs)",\n'
+            f'    "complexity_analysis": "Computational and space complexity analysis '
+            f'if applicable (optional)",\n'
+            f'    "mathematical_formulation": "Key mathematical formulations or '
+            f'equations explained (optional)"\n'
+            f"}}\n\n"
+            f"**Important**: Respond ONLY with valid JSON, no additional text. "
+            f"Please write all content in {language_instruction}."""
 
         try:
             # Call LLM using base class safe method
@@ -165,7 +171,10 @@ Please provide a comprehensive methodology analysis in JSON format with the foll
 
                 analysis = json.loads(response_text)
                 agent_logger.info("MethodologyAgent分析成功生成")
-                return analysis
+                if isinstance(analysis, dict):
+                    return analysis
+                else:
+                    return {"result": analysis}
             else:
                 # Return structured fallback
                 return {

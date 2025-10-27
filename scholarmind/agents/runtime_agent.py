@@ -3,9 +3,8 @@ ScholarMind Runtime Agent
 符合 AgentScope Runtime 规范的 ScholarMind 智能体包装器
 """
 
-import asyncio
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from agentscope.message import Msg
 from agentscope_runtime.engine.agents.agentscope_agent import AgentScopeAgent

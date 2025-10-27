@@ -20,7 +20,7 @@ class ModelConfigManager:
     """模型配置管理器（单例模式）"""
 
     _instance = None
-    _config_cache = {}
+    _config_cache: dict[str, Any] = {}
 
     def __new__(cls):
         if cls._instance is None:

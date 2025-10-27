@@ -5,7 +5,7 @@
 `main_runtime.py` 是基于 FastAPI 和 AgentScope 的多智能体服务版本，提供了三种运行模式：
 
 1. **Runtime 模式** - 作为 HTTP API 服务运行（基于 FastAPI）
-2. **Interactive 模式** - 交互式对话模式  
+2. **Interactive 模式** - 交互式对话模式
 3. **Direct 模式** - 直接处理模式（兼容原 main.py）
 
 ## 安装依赖

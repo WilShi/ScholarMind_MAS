@@ -3,9 +3,10 @@ ScholarMind Configuration File
 智读ScholarMind系统配置文件
 """
 
-import os
 import json
-from typing import Dict, Any, Optional
+import os
+from typing import Any, Dict, Optional
+
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -24,11 +25,11 @@ class ModelConfig:
 
 class AcademicAPIConfig:
     """学术API配置"""
-    
+
     # Semantic Scholar API
     SEMANTIC_SCHOLAR_API_KEY = os.getenv("SEMANTIC_SCHOLAR_API_KEY")
     SEMANTIC_SCHOLAR_BASE_URL = "https://api.semanticscholar.org/graph/v1"
-    
+
     # ArXiv API
     ARXIV_BASE_URL = "http://export.arxiv.org/api/query"
 
@@ -95,10 +96,10 @@ def get_model_config(model_name: Optional[str] = None) -> Dict[str, Any]:
         模型配置字典
     """
     # 读取model_configs.json
-    config_path = os.path.join(os.path.dirname(__file__), 'model_configs.json')
+    config_path = os.path.join(os.path.dirname(__file__), "model_configs.json")
 
     try:
-        with open(config_path, 'r', encoding='utf-8') as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             model_configs = json.load(f)
 
         # 如果没有指定model_name，使用默认配置
@@ -124,7 +125,7 @@ def get_model_config(model_name: Optional[str] = None) -> Dict[str, Any]:
         # 如果没找到，返回默认配置
         return model_configs[0] if model_configs else {}
 
-    except (FileNotFoundError, json.JSONDecodeError) as e:
+    except (FileNotFoundError, json.JSONDecodeError):
         # 如果配置文件读取失败，返回一个基本的备用配置
         return {
             "config_name": "fallback",
@@ -141,11 +142,14 @@ def validate_config() -> bool:
     # 检查是否至少配置了其中一个API密钥
     openai_key = os.getenv("OPENAI_API_KEY")
     modelscope_key = os.getenv("MODELSCOPE_API_KEY")
-    
+
     if not openai_key and not modelscope_key:
-        print("Missing required environment variable: Please set either OPENAI_API_KEY or MODELSCOPE_API_KEY")
+        print(
+            "Missing required environment variable: "
+            "Please set either OPENAI_API_KEY or MODELSCOPE_API_KEY"
+        )
         return False
-    
+
     return True
 
 
@@ -155,7 +159,7 @@ def setup_directories():
         OutputConfig.OUTPUT_DIR,
         CacheConfig.CACHE_DIR,
         OutputConfig.REPORT_TEMPLATE_DIR,
-        LoggingConfig.LOG_DIR  # 添加日志目录
+        LoggingConfig.LOG_DIR,  # 添加日志目录
     ]
 
     for directory in directories:

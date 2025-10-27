@@ -231,7 +231,7 @@ curl -X POST http://localhost:8080/process_paper \
         "type": "ResourceRetrievalAgent"
       },
       {
-        "name": "MethodologyAgent", 
+        "name": "MethodologyAgent",
         "type": "MethodologyAgent"
       },
       {
@@ -252,7 +252,7 @@ curl -X POST http://localhost:8080/process_paper \
     "workflow_stages": [
       "1. Resource Retrieval",
       "2. Parallel Analysis (Methodology + Experiment)",
-      "3. Insight Generation", 
+      "3. Insight Generation",
       "4. Report Synthesis"
     ]
   }
@@ -381,7 +381,7 @@ BASE_URL = "http://localhost:8080"
 def process_paper(paper_input, input_type="url", user_background="intermediate"):
     """处理论文"""
     url = f"{BASE_URL}/process_paper"
-    
+
     payload = {
         "paper_input": paper_input,
         "input_type": input_type,
@@ -389,9 +389,9 @@ def process_paper(paper_input, input_type="url", user_background="intermediate")
         "output_language": "zh",
         "save_report": True
     }
-    
+
     response = requests.post(url, json=payload)
-    
+
     if response.status_code == 200:
         result = response.json()
         if result["status"] == "success":
@@ -426,9 +426,9 @@ async function processPaper(paperInput, inputType = 'url', userBackground = 'int
             save_report: true
         })
     });
-    
+
     const result = await response.json();
-    
+
     if (result.status === 'success') {
         console.log('论文标题:', result.data.outputs.report.title);
         console.log('摘要:', result.data.outputs.report.summary);

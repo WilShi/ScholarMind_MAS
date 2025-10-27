@@ -6,7 +6,7 @@ ScholarMind Base Agent
 import asyncio
 import json
 import time
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
 from agentscope.agent import AgentBase, ReActAgent
 from agentscope.formatter import OpenAIChatFormatter
@@ -68,6 +68,8 @@ class ScholarMindAgentBase(AgentBase):
         for attempt in range(max_retries):
             try:
                 await self._ensure_model_initialized()
+                if self.model is None:
+                    raise RuntimeError("Model initialization failed")
                 response = await self.model(messages)
                 return await self._parse_model_response(response)
             except Exception as e:
@@ -78,6 +80,7 @@ class ScholarMindAgentBase(AgentBase):
                     agent_logger.error(f"模型调用最终失败 {self.name}: {e}")
                     return fallback_response or {"error": str(e), "success": False}
                 await asyncio.sleep(2**attempt)  # 指数退避
+        return fallback_response or {"error": "All retries failed", "success": False}
 
     async def _parse_model_response(self, response) -> Dict[str, Any]:
         """统一解析模型响应"""
@@ -100,7 +103,11 @@ class ScholarMindAgentBase(AgentBase):
 
             # 尝试解析JSON
             try:
-                return json.loads(response_text)
+                parsed = json.loads(response_text)
+                if isinstance(parsed, dict):
+                    return parsed
+                else:
+                    return {"content": parsed, "success": True}
             except json.JSONDecodeError:
                 return {"content": response_text, "success": True}
         except Exception as e:
@@ -145,11 +152,15 @@ class ScholarMindAgentBase(AgentBase):
             return msg.content
         elif isinstance(msg.content, str):
             try:
-                return json.loads(msg.content)
+                parsed = json.loads(msg.content)
+                if isinstance(parsed, dict):
+                    return parsed
+                else:
+                    return {"value": parsed}
             except json.JSONDecodeError:
                 return {"text": msg.content}
         else:
-            return {"raw_content": msg.content}
+            return {"raw_content": str(msg.content)}
 
     async def _process_logic(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """子类需要实现的具体处理逻辑"""

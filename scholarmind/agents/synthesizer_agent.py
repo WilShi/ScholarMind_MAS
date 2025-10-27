@@ -15,7 +15,10 @@ class SynthesizerAgent(ScholarMindAgentBase):
         # Initialize base class with proper name parameter
         super().__init__(
             name="SynthesizerAgent",
-            sys_prompt="You are an expert in synthesizing comprehensive reports from academic paper analysis.",
+            sys_prompt=(
+                "You are an expert in synthesizing comprehensive reports "
+                "from academic paper analysis."
+            ),
             **kwargs,
         )
 
@@ -128,7 +131,8 @@ class SynthesizerAgent(ScholarMindAgentBase):
                 )
             if methodology_analysis.get("innovation_points"):
                 context_parts.append(
-                    f"Innovation Points: {', '.join(methodology_analysis['innovation_points'][:3])}\n"
+                    f"Innovation Points: {', '.join(methodology_analysis['innovation_points'][:2])}"
+                    f"...\n"
                 )
 
         # Add experiment evaluation if available
@@ -187,9 +191,12 @@ class SynthesizerAgent(ScholarMindAgentBase):
         """Use LLM to generate paper analysis with integrated insights from all agents"""
         # Define background-specific instructions
         background_instructions = {
-            "beginner": "Explain concepts in simple terms, avoid jargon, and provide context for technical terms.",
-            "intermediate": "Use moderate technical language and assume basic familiarity with the field.",
-            "advanced": "Use technical terminology freely and focus on novel contributions and technical details.",
+            "beginner": "Explain concepts in simple terms, avoid jargon, "
+            "and provide context for technical terms.",
+            "intermediate": "Use moderate technical language and assume "
+            "basic familiarity with the field.",
+            "advanced": "Use technical terminology freely and focus on "
+            "novel contributions and technical details.",
         }
 
         instruction = background_instructions.get(
@@ -206,28 +213,37 @@ class SynthesizerAgent(ScholarMindAgentBase):
                 "\n\nYou have access to comprehensive analysis from multiple specialized agents:\n"
             )
             if methodology_analysis:
-                additional_context += "- Methodology Agent has deeply analyzed the technical approach, architecture, and innovations\n"
+                additional_context += "- Methodology Agent has deeply analyzed the technical "
+                "approach, architecture, and innovations\n"
             if experiment_evaluation:
-                additional_context += "- Experiment Evaluator Agent has analyzed the experimental setup, results, and validity\n"
+                additional_context += "- Experiment Evaluator Agent has analyzed the experimental "
+                "setup, results, and validity\n"
             if insight_analysis:
-                additional_context += "- Insight Generation Agent has provided critical insights, strengths, weaknesses, and future directions\n"
-            additional_context += "\nPlease synthesize all these perspectives into a cohesive, comprehensive report.\n"
+                additional_context += "- Insight Generation Agent has provided critical insights, "
+                "strengths, weaknesses, and future directions\n"
+            additional_context += "\nPlease synthesize all these perspectives into a "
+            "cohesive, comprehensive report.\n"
 
         # Create prompt for LLM
-        prompt = f"""You are synthesizing a comprehensive report for an academic paper. {instruction}{additional_context}
-
-{paper_context}
-
-Please provide a comprehensive analysis in JSON format with the following structure:
-{{
-    "summary": "A 2-3 paragraph summary integrating all agent insights (methodology, experiments, and critical analysis)",
-    "key_contributions": ["contribution 1 (from methodology innovations)", "contribution 2", "contribution 3"],
-    "methodology_summary": "A paragraph summarizing the methodology (use MethodologyAgent's analysis if available)",
-    "experiment_summary": "A paragraph summarizing the experiments and results (use ExperimentEvaluatorAgent's analysis if available)",
-    "insights": ["insight 1 (can reference methodology innovations)", "insight 2 (can reference experimental findings)", "insight 3 (can reference critical analysis and future directions)"]
-}}
-
-**Important**: Respond ONLY with valid JSON, no additional text. Please write all content in {language_instruction}."""
+        prompt = f"""You are synthesizing a comprehensive report for an academic paper. "
+            f"{instruction}{additional_context}\n\n{paper_context}\n\n"
+            f"Please provide a comprehensive analysis in JSON format "
+            f"with the following structure:\n"
+            f"{{\n"
+            f'    "summary": "A 2-3 paragraph summary integrating all agent insights "
+            f'(methodology, experiments, and critical analysis)",\n'
+            f'    "key_contributions": ["contribution 1 (from methodology innovations)", '
+            f'"contribution 2", "contribution 3"],\n'
+            f'    "methodology_summary": "A paragraph summarizing the methodology "
+            f'(use MethodologyAgent's analysis if available)",\n'
+            f'    "experiment_summary": "A paragraph summarizing the experiments and results "
+            f'(use ExperimentEvaluatorAgent's analysis if available)"',\n
+            f'    "insights": ["insight 1 (can reference methodology innovations)", '
+            f'"insight 2 (can reference experimental findings)", '
+            f'"insight 3 (can reference critical analysis and future directions)"]\n'
+            f"}}\n\n"
+            f"**Important**: Respond ONLY with valid JSON, no additional text. "
+            f"Please write all content in {language_instruction}."""
 
         try:
             # Call LLM - OpenAIChatModel expects messages list
@@ -239,6 +255,8 @@ Please provide a comprehensive analysis in JSON format with the following struct
             agent_logger.info("正在调用LLM分析论文...")
 
             # Await the async model call
+            if self.model is None:
+                raise RuntimeError("Model not initialized")
             response = await self.model(messages)
 
             # Handle async generator (streaming response)
@@ -287,7 +305,10 @@ Please provide a comprehensive analysis in JSON format with the following struct
             # Parse JSON response
             analysis = json.loads(response_text)
             agent_logger.info("LLM分析成功生成")
-            return analysis
+            if isinstance(analysis, dict):
+                return analysis
+            else:
+                return {"result": analysis}
 
         except json.JSONDecodeError as e:
             agent_logger.warning(f"Failed to parse JSON from LLM response: {e}")
@@ -319,12 +340,12 @@ Please provide a comprehensive analysis in JSON format with the following struct
         summary = metadata.get("abstract", "No abstract available.")
 
         # Try to identify key sections
-        key_contributions = []
+        key_contributions: list[str] = []
         methodology_summary = "Not found"
         experiment_summary = "Not found"
 
         for section in sections:
-            section_title = section.get("title", "").lower()
+
             section_content = section.get("content", "")
             section_type = section.get("section_type", "")
 

@@ -7,8 +7,6 @@ import json
 import time
 from typing import Any, Dict
 
-from agentscope.message import Msg
-
 from ..agents.base_agent import ScholarMindAgentBase
 from ..utils.logger import agent_logger
 
@@ -20,7 +18,10 @@ class ExperimentEvaluatorAgent(ScholarMindAgentBase):
         # Initialize base class with proper name parameter
         super().__init__(
             name="ExperimentEvaluatorAgent",
-            sys_prompt="You are an expert in evaluating experimental designs and results in academic papers.",
+            sys_prompt=(
+                "You are an expert in evaluating experimental designs "
+                "and results in academic papers."
+            ),
             **kwargs,
         )
 
@@ -120,25 +121,31 @@ class ExperimentEvaluatorAgent(ScholarMindAgentBase):
         language_instruction = {"zh": "Chinese (中文)", "en": "English"}[output_language]
 
         # Create prompt for LLM
-        prompt = f"""You are evaluating the experimental design and results of an academic paper. Please provide a comprehensive assessment.
-
-{paper_context}
-
-Please provide a detailed experiment evaluation in JSON format with the following structure:
-{{
-    "experimental_setup": "Description of the experimental setup, datasets used, and evaluation protocols (2-3 paragraphs)",
-    "baseline_comparison": "Analysis of baseline methods compared and how they were selected (1-2 paragraphs)",
-    "key_metrics": [
-        {{"metric": "Metric name", "value": "Result value", "significance": "Why this metric matters"}},
-        {{"metric": "Metric name", "value": "Result value", "significance": "Why this metric matters"}}
-    ],
-    "validity_assessment": "Assessment of experimental validity, rigor, and reproducibility (2-3 paragraphs)",
-    "results_analysis": "Analysis of the results, performance comparisons, and what they demonstrate (2-3 paragraphs)",
-    "limitations": ["limitation 1", "limitation 2", "limitation 3"],
-    "statistical_significance": "Discussion of statistical significance, error bars, confidence intervals if mentioned (optional)"
-}}
-
-**Important**: Respond ONLY with valid JSON, no additional text. Please write all content in {language_instruction}."""
+        prompt = f"""You are evaluating the experimental design and results of an academic paper. "
+            f"Please provide a comprehensive assessment.\n\n{paper_context}\n\n"
+            f"Please provide a detailed experiment evaluation in JSON format "
+            f"with the following structure:\n"
+            f"{{\n"
+            f'    "experimental_setup": "Description of the experimental setup, '
+            f'datasets used, and evaluation protocols (2-3 paragraphs)",\n'
+            f'    "baseline_comparison": "Analysis of baseline methods compared '
+            f'and how they were selected (1-2 paragraphs)",\n'
+            f'    "key_metrics": [\n'
+            f'        {{"metric": "Metric name", "value": "Result value", '
+            f'"significance": "Why this metric matters"}},\n'
+            f'        {{"metric": "Metric name", "value": "Result value", '\n"
+            f'"significance": "Why this metric matters"}}\n'
+            f'    ],\n'
+            f'    "validity_assessment": "Assessment of experimental validity, '
+            f'rigor, and reproducibility (2-3 paragraphs)",\n'
+            f'    "results_analysis": "Analysis of the results, performance '
+            f'comparisons, and what they demonstrate (2-3 paragraphs)",\n'
+            f'    "limitations": ["limitation 1", "limitation 2", "limitation 3"],\n'
+            f'    "statistical_significance": "Discussion of statistical significance, '
+            f'error bars, confidence intervals if mentioned (optional)"\n'
+            f"}}\n\n"
+            f"**Important**: Respond ONLY with valid JSON, no additional text. "
+            f"Please write all content in {language_instruction}."""
 
         try:
             # Call LLM using base class safe method
@@ -165,7 +172,10 @@ Please provide a detailed experiment evaluation in JSON format with the followin
 
                 evaluation = json.loads(response_text)
                 agent_logger.info("ExperimentEvaluatorAgent评估成功生成")
-                return evaluation
+                if isinstance(evaluation, dict):
+                    return evaluation
+                else:
+                    return {"result": evaluation}
             else:
                 # Return structured fallback
                 return {

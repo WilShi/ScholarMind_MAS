@@ -38,12 +38,14 @@ class TestMethodologyAgent:
             "sections": [
                 {
                     "title": "Methodology",
-                    "content": "We propose a new neural network architecture based on transformer models.",
+                    "content": "We propose a new neural network architecture "
+                    "based on transformer models.",
                     "section_type": "methodology",
                 },
                 {
                     "title": "Algorithm",
-                    "content": "Our algorithm consists of three main steps: preprocessing, training, and evaluation.",
+                    "content": "Our algorithm consists of three main steps: "
+                    "preprocessing, training, and evaluation.",
                     "section_type": "methodology",
                 },
             ],
@@ -116,12 +118,14 @@ class TestExperimentEvaluatorAgent:
             "sections": [
                 {
                     "title": "Experiments",
-                    "content": "We conducted experiments on three datasets: MNIST, CIFAR-10, and ImageNet.",
+                    "content": "We conducted experiments on three datasets: "
+                    "MNIST, CIFAR-10, and ImageNet.",
                     "section_type": "experiment",
                 },
                 {
                     "title": "Results",
-                    "content": "Our method achieved 95% accuracy on MNIST, outperforming the baseline by 5%.",
+                    "content": "Our method achieved 95% accuracy on MNIST, "
+                    "outperforming the baseline by 5%.",
                     "section_type": "results",
                 },
             ],

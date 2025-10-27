@@ -68,11 +68,15 @@ class MessageUtils:
             return msg.content
         elif isinstance(msg.content, str):
             try:
-                return json.loads(msg.content)
+                parsed = json.loads(msg.content)
+                if isinstance(parsed, dict):
+                    return parsed
+                else:
+                    return {"value": parsed}
             except json.JSONDecodeError:
                 return {"text": msg.content}
         else:
-            return {"raw_content": msg.content}
+            return {"raw_content": str(msg.content)}
 
     @staticmethod
     def parse_agent_response(response: Msg) -> Dict[str, Any]:

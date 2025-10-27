@@ -3,10 +3,6 @@
 ScholarMind Runtime 演示脚本
 """
 
-import asyncio
-import json
-import time
-from pathlib import Path
 
 import requests
 

@@ -3,7 +3,6 @@ Phase 3 Tests - Insight Generation and Complete 5-Agent Workflow
 测试洞察生成智能体和完整5智能体工作流
 """
 
-import asyncio
 import json
 
 import pytest
@@ -38,7 +37,8 @@ class TestInsightGenerationAgent:
             "sections": [
                 {
                     "title": "Conclusion",
-                    "content": "Our work has both strengths and limitations. Future work should address scalability.",
+                    "content": "Our work has both strengths and limitations. "
+                    "Future work should address scalability.",
                     "section_type": "conclusion",
                 },
                 {

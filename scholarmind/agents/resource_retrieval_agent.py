@@ -175,7 +175,8 @@ class ResourceRetrievalAgent(ReActAgent):
             # 步骤3：处理参考文献
             if paper_content.metadata.references:
                 agent_logger.info("处理参考文献信息")
-                # This part might need to use academic_get_reference_info_tool if references are looked up externally
+                # This part might need to use academic_get_reference_info_tool "
+                # "if references are looked up externally
                 # For now, assuming it's just counting internal references
                 external_info["references_count"] = len(paper_content.metadata.references)
 

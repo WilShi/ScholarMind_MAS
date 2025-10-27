@@ -173,13 +173,19 @@ class ModelAvailabilityTester:
                     "message": "测试过程中发生异常",
                 }
             else:
-                final_results[config_name] = result
+                final_results[config_name] = result if isinstance(result, dict) else {"result": result}
 
         return final_results
 
     def get_test_result(self, config_name: str) -> Optional[Dict[str, Any]]:
         """获取缓存的测试结果"""
-        return self.test_results.get(config_name)
+        result = self.test_results.get(config_name)
+        if result is None:
+            return None
+        if isinstance(result, dict):
+            return result
+        else:
+            return {"data": result}
 
     def clear_cache(self):
         """清除测试结果缓存"""

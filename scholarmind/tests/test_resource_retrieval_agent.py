@@ -2,7 +2,6 @@
 测试资源检索智能体
 """
 
-import json
 import os
 import tempfile
 

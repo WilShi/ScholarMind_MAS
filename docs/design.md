@@ -38,7 +38,7 @@
 ```mermaid
 graph TD
     A[用户输入: 论文源数据 + 用户背景] --> B[流程起点];
-    
+
     subgraph 核心解读流程 (Computational Graph)
         B --> C[节点1: 资源与信息检索];
         C -- 结构化论文数据 --> D{数据分发};

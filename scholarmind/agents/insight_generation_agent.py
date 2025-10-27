@@ -20,7 +20,10 @@ class InsightGenerationAgent(ScholarMindAgentBase):
         # Initialize base class with proper name parameter
         super().__init__(
             name="InsightGenerationAgent",
-            sys_prompt="You are an expert in generating critical insights and identifying limitations in academic research.",
+            sys_prompt=(
+                "You are an expert in generating critical insights "
+                "and identifying limitations in academic research."
+            ),
             **kwargs,
         )
 
@@ -164,28 +167,35 @@ class InsightGenerationAgent(ScholarMindAgentBase):
         language_instruction = {"zh": "Chinese (中文)", "en": "English"}[output_language]
 
         # Create prompt for LLM
-        prompt = f"""You are performing a critical analysis of an academic paper. Provide deep, thoughtful insights that go beyond surface-level observations.
-
-{paper_context}
-
-Please provide a comprehensive critical analysis in JSON format with the following structure:
-{{
-    "logical_flow": "Analyze the overall logical structure and argumentation flow of the paper (2-3 paragraphs)",
-    "strengths": ["strength 1 (be specific)", "strength 2", "strength 3"],
-    "weaknesses": ["weakness 1 (be specific and constructive)", "weakness 2", "weakness 3"],
-    "critical_insights": ["critical insight 1 (go beyond obvious observations)", "insight 2", "insight 3"],
-    "future_directions": ["future direction 1 (actionable research suggestions)", "direction 2", "direction 3"],
-    "novelty_assessment": "Evaluate the novelty and originality of this work (1-2 paragraphs)",
-    "impact_analysis": "Analyze the potential impact and significance of this work (1-2 paragraphs)",
-    "research_questions": ["Derivative research question 1", "question 2", "question 3"]
-}}
-
-**Important**:
-- Be critical but constructive
-- Provide specific, actionable insights
-- Consider both technical and practical implications
-- Respond ONLY with valid JSON, no additional text
-- Please write all content in {language_instruction}."""
+        prompt = f"""You are performing a critical analysis of an academic paper. "
+            f"Provide deep, thoughtful insights that go beyond "
+            f"surface-level observations.\n\n{paper_context}\n\n"
+            f"Please provide a comprehensive critical analysis in JSON format "
+            f"with the following structure:\n"
+            f"{{\n"
+            f'    "logical_flow": "Analyze the overall logical structure and '
+            f'argumentation flow of the paper (2-3 paragraphs)",\n'
+            f'    "strengths": ["strength 1 (be specific)", '
+            f'"strength 2", "strength 3"],\n'
+            f'    "weaknesses": ["weakness 1 (be specific and constructive)", '
+            f'"weakness 2", "weakness 3"],\n'
+            f'    "critical_insights": ["critical insight 1 (go beyond obvious observations)", '
+            f'"insight 2", "insight 3"],\n'
+            f'    "future_directions": ["future direction 1 (actionable research suggestions)", '
+            f'"direction 2", "direction 3"],\n'
+            f'    "novelty_assessment": "Evaluate the novelty and '
+            f'originality of this work (1-2 paragraphs)",\n'
+            f'    "impact_analysis": "Analyze the potential impact and '
+            f'significance of this work (1-2 paragraphs)",\n'
+            f'    "research_questions": ["Derivative research question 1", '
+            f'"question 2", "question 3"]\n'
+            f"}}\n\n"
+            f"**Important**:\n"
+            f"- Be critical but constructive\n"
+            f"- Provide specific, actionable insights\n"
+            f"- Consider both technical and practical implications\n"
+            f"- Respond ONLY with valid JSON, no additional text\n"
+            f"- Please write all content in {language_instruction}."""
 
         try:
             # Call LLM - OpenAIChatModel expects messages list
@@ -197,6 +207,8 @@ Please provide a comprehensive critical analysis in JSON format with the followi
             agent_logger.info("InsightGenerationAgent正在调用LLM生成洞察...")
 
             # Await the async model call
+            if self.model is None:
+                raise RuntimeError("Model not initialized")
             response = await self.model(messages)
 
             # Handle async generator (streaming response)
@@ -242,7 +254,10 @@ Please provide a comprehensive critical analysis in JSON format with the followi
             # Parse JSON response
             insights = json.loads(response_text)
             agent_logger.info("InsightGenerationAgent洞察成功生成")
-            return insights
+            if isinstance(insights, dict):
+                return insights
+            else:
+                return {"result": insights}
 
         except json.JSONDecodeError as e:
             agent_logger.warning(f"Failed to parse JSON from LLM response: {e}")
@@ -299,7 +314,8 @@ Please provide a comprehensive critical analysis in JSON format with the followi
                 break
 
         return {
-            "logical_flow": f"This paper titled '{metadata.get('title', 'Unknown')}' presents research findings. "
+            "logical_flow": f"This paper titled '{metadata.get('title', 'Unknown')}' "
+            f"presents research findings. "
             + (
                 conclusion_content
                 if conclusion_content
