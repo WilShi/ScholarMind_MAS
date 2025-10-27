@@ -10,11 +10,12 @@ from urllib.parse import urlparse
 
 from ..utils.logger import setup_logger
 
-logger = setup_logger('scholarmind.validation', level='INFO', log_file=None, console=True)
+logger = setup_logger("scholarmind.validation", level="INFO", log_file=None, console=True)
 
 
 class ValidationError(Exception):
     """输入验证错误"""
+
     pass
 
 
@@ -22,7 +23,7 @@ class InputValidator:
     """输入验证器"""
 
     # 允许的文件扩展名
-    ALLOWED_EXTENSIONS = {'.pdf', '.docx', '.txt', '.md'}
+    ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".md"}
 
     # 最大文件大小 (50MB)
     MAX_FILE_SIZE = 50 * 1024 * 1024
@@ -31,18 +32,18 @@ class InputValidator:
     MAX_TEXT_LENGTH = 100000
 
     # ArXiv ID 正则
-    ARXIV_ID_PATTERN = re.compile(r'^\d{4}\.\d{4,5}(v\d+)?$')
+    ARXIV_ID_PATTERN = re.compile(r"^\d{4}\.\d{4,5}(v\d+)?$")
 
     # DOI 正则
-    DOI_PATTERN = re.compile(r'^10\.\d{4,9}/[-._;()/:A-Z0-9]+$', re.IGNORECASE)
+    DOI_PATTERN = re.compile(r"^10\.\d{4,9}/[-._;()/:A-Z0-9]+$", re.IGNORECASE)
 
     # 危险字符模式
     DANGEROUS_PATTERNS = [
-        r'\.\./',  # 路径遍历
-        r'<script',  # XSS
-        r'javascript:',  # JS injection
-        r'on\w+\s*=',  # Event handlers
-        r'<iframe',  # iframe injection
+        r"\.\./",  # 路径遍历
+        r"<script",  # XSS
+        r"javascript:",  # JS injection
+        r"on\w+\s*=",  # Event handlers
+        r"<iframe",  # iframe injection
     ]
 
     @staticmethod
@@ -69,12 +70,18 @@ class InputValidator:
 
             # 检查文件扩展名
             if path.suffix.lower() not in InputValidator.ALLOWED_EXTENSIONS:
-                return False, f"不支持的文件类型: {path.suffix}. 支持的类型: {', '.join(InputValidator.ALLOWED_EXTENSIONS)}"
+                return (
+                    False,
+                    f"不支持的文件类型: {path.suffix}. 支持的类型: {', '.join(InputValidator.ALLOWED_EXTENSIONS)}",
+                )
 
             # 检查文件大小
             file_size = path.stat().st_size
             if file_size > InputValidator.MAX_FILE_SIZE:
-                return False, f"文件过大: {file_size / (1024*1024):.2f}MB (最大 {InputValidator.MAX_FILE_SIZE / (1024*1024):.0f}MB)"
+                return (
+                    False,
+                    f"文件过大: {file_size / (1024*1024):.2f}MB (最大 {InputValidator.MAX_FILE_SIZE / (1024*1024):.0f}MB)",
+                )
 
             # 检查文件是否可读
             if not path.is_file() or not path.exists():
@@ -100,7 +107,7 @@ class InputValidator:
             parsed = urlparse(url)
 
             # 检查scheme
-            if parsed.scheme not in ['http', 'https']:
+            if parsed.scheme not in ["http", "https"]:
                 return False, f"不支持的URL协议: {parsed.scheme}. 仅支持 http 和 https"
 
             # 检查是否有host
@@ -108,7 +115,7 @@ class InputValidator:
                 return False, "URL缺少主机名"
 
             # 检查是否是支持的域名
-            supported_domains = ['arxiv.org', 'semanticscholar.org', 'doi.org']
+            supported_domains = ["arxiv.org", "semanticscholar.org", "doi.org"]
             if not any(domain in parsed.netloc for domain in supported_domains):
                 logger.warning(f"URL域名不在支持列表中: {parsed.netloc}")
 
@@ -132,8 +139,8 @@ class InputValidator:
         arxiv_id = arxiv_id.strip()
 
         # 从URL中提取ID
-        if 'arxiv.org' in arxiv_id:
-            match = re.search(r'(\d{4}\.\d{4,5}(?:v\d+)?)', arxiv_id)
+        if "arxiv.org" in arxiv_id:
+            match = re.search(r"(\d{4}\.\d{4,5}(?:v\d+)?)", arxiv_id)
             if match:
                 arxiv_id = match.group(1)
             else:
@@ -178,10 +185,10 @@ class InputValidator:
         # 移除危险模式
         cleaned_text = text
         for pattern in InputValidator.DANGEROUS_PATTERNS:
-            cleaned_text = re.sub(pattern, '', cleaned_text, flags=re.IGNORECASE)
+            cleaned_text = re.sub(pattern, "", cleaned_text, flags=re.IGNORECASE)
 
         # 移除非打印字符（保留常见空白字符）
-        cleaned_text = re.sub(r'[^\x20-\x7E\n\r\t\u4e00-\u9fff]', '', cleaned_text)
+        cleaned_text = re.sub(r"[^\x20-\x7E\n\r\t\u4e00-\u9fff]", "", cleaned_text)
 
         return cleaned_text.strip()
 
@@ -196,7 +203,7 @@ class InputValidator:
         Returns:
             (是否有效, 错误消息)
         """
-        valid_backgrounds = ['beginner', 'intermediate', 'advanced']
+        valid_backgrounds = ["beginner", "intermediate", "advanced"]
 
         if background.lower() not in valid_backgrounds:
             return False, f"无效的用户背景: {background}. 有效值: {', '.join(valid_backgrounds)}"
@@ -214,7 +221,7 @@ class InputValidator:
         Returns:
             (是否有效, 错误消息)
         """
-        valid_languages = ['zh', 'en']
+        valid_languages = ["zh", "en"]
 
         if language.lower() not in valid_languages:
             return False, f"不支持的语言: {language}. 有效值: {', '.join(valid_languages)}"
@@ -222,7 +229,9 @@ class InputValidator:
         return True, None
 
     @classmethod
-    def validate_paper_input(cls, paper_input: str, input_type: str) -> Tuple[bool, Optional[str], str]:
+    def validate_paper_input(
+        cls, paper_input: str, input_type: str
+    ) -> Tuple[bool, Optional[str], str]:
         """
         综合验证论文输入
 
@@ -236,24 +245,24 @@ class InputValidator:
         # 清理输入
         paper_input = paper_input.strip()
 
-        if input_type == 'file':
+        if input_type == "file":
             is_valid, error = cls.validate_file_path(paper_input)
             return is_valid, error, paper_input
 
-        elif input_type == 'url':
+        elif input_type == "url":
             is_valid, error = cls.validate_url(paper_input)
             return is_valid, error, paper_input
 
-        elif input_type == 'arxiv':
+        elif input_type == "arxiv":
             is_valid, error = cls.validate_arxiv_id(paper_input)
             # 规范化ArXiv ID
             if is_valid:
-                if 'arxiv.org' in paper_input:
-                    match = re.search(r'(\d{4}\.\d{4,5}(?:v\d+)?)', paper_input)
+                if "arxiv.org" in paper_input:
+                    match = re.search(r"(\d{4}\.\d{4,5}(?:v\d+)?)", paper_input)
                     paper_input = match.group(1) if match else paper_input
             return is_valid, error, paper_input
 
-        elif input_type == 'text':
+        elif input_type == "text":
             is_valid, error = cls.validate_text(paper_input)
             # 清理文本
             cleaned_text = cls.sanitize_text(paper_input)
@@ -267,7 +276,7 @@ def validate_pipeline_inputs(
     paper_input: str,
     input_type: str,
     user_background: str = "intermediate",
-    output_language: str = "zh"
+    output_language: str = "zh",
 ) -> Dict[str, Any]:
     """
     验证Pipeline输入参数
@@ -306,6 +315,6 @@ def validate_pipeline_inputs(
             "paper_input": cleaned_input,
             "input_type": input_type,
             "user_background": user_background.lower(),
-            "output_language": output_language.lower()
-        }
+            "output_language": output_language.lower(),
+        },
     }

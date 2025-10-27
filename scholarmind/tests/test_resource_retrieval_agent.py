@@ -57,7 +57,9 @@ class TestResourceRetrievalAgent:
 
         assert result.success is True
         assert result.paper_content is not None
-        assert result.paper_content.metadata.title == "Deep Learning for Natural Language Processing"
+        assert (
+            result.paper_content.metadata.title == "Deep Learning for Natural Language Processing"
+        )
         assert len(result.paper_content.metadata.authors) == 2
         assert "deep learning" in result.paper_content.metadata.abstract.lower()
         assert len(result.paper_content.sections) > 0
@@ -67,7 +69,9 @@ class TestResourceRetrievalAgent:
     def test_parse_file_input(self, agent, sample_text):
         """测试文件输入解析"""
         # 创建临时文件
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False, encoding="utf-8") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".txt", delete=False, encoding="utf-8"
+        ) as f:
             f.write(sample_text)
             temp_file = f.name
 
@@ -90,9 +94,11 @@ class TestResourceRetrievalAgent:
         assert result.success is False
         assert result.error_message is not None
         # 修改为更宽松的检查，支持中英文错误消息
-        assert ("File not found" in result.error_message or
-                "文件" in result.error_message or
-                "No such file" in result.error_message)
+        assert (
+            "File not found" in result.error_message
+            or "文件" in result.error_message
+            or "No such file" in result.error_message
+        )
 
     def test_validate_input(self, agent):
         """测试输入验证"""
@@ -131,14 +137,13 @@ class TestResourceRetrievalAgent:
     def test_reply_with_text_input(self, agent, sample_text):
         """测试文本输入的回复"""
         import asyncio
+
         from agentscope.message import Msg
 
         async def run_test():
             # 使用字典格式而不是JSON字符串
             message = Msg(
-                name="user",
-                content={"paper_input": sample_text, "input_type": "text"},
-                role="user"
+                name="user", content={"paper_input": sample_text, "input_type": "text"}, role="user"
             )
 
             response = await agent.reply(message)
@@ -160,6 +165,7 @@ class TestResourceRetrievalAgent:
     def test_reply_with_simple_input(self, agent, sample_text):
         """测试简单输入的回复"""
         import asyncio
+
         from agentscope.message import Msg
 
         async def run_test():

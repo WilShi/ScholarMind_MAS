@@ -5,11 +5,12 @@ Phase 2 Agents Tests
 
 import asyncio
 import json
-import pytest
 
-from scholarmind.agents.methodology_agent import MethodologyAgent
-from scholarmind.agents.experiment_evaluator_agent import ExperimentEvaluatorAgent
+import pytest
 from agentscope.message import Msg
+
+from scholarmind.agents.experiment_evaluator_agent import ExperimentEvaluatorAgent
+from scholarmind.agents.methodology_agent import MethodologyAgent
 
 
 class TestMethodologyAgent:
@@ -20,7 +21,7 @@ class TestMethodologyAgent:
         agent = MethodologyAgent()
         assert agent is not None
         assert agent.name == "MethodologyAgent"
-        assert hasattr(agent, 'model')
+        assert hasattr(agent, "model")
 
     @pytest.mark.asyncio
     async def test_methodology_agent_reply(self):
@@ -38,27 +39,26 @@ class TestMethodologyAgent:
                 {
                     "title": "Methodology",
                     "content": "We propose a new neural network architecture based on transformer models.",
-                    "section_type": "methodology"
+                    "section_type": "methodology",
                 },
                 {
                     "title": "Algorithm",
                     "content": "Our algorithm consists of three main steps: preprocessing, training, and evaluation.",
-                    "section_type": "methodology"
-                }
-            ]
+                    "section_type": "methodology",
+                },
+            ],
         }
 
-        input_data = {
-            "paper_content": test_paper_content,
-            "output_language": "en"
-        }
+        input_data = {"paper_content": test_paper_content, "output_language": "en"}
 
         msg = Msg(name="user", content=json.dumps(input_data), role="user")
 
         # 调用agent
         response = await agent.reply(msg)
         # response.content 已经是字典，不需要 json.loads
-        response_data = response.content if isinstance(response.content, dict) else json.loads(response.content)
+        response_data = (
+            response.content if isinstance(response.content, dict) else json.loads(response.content)
+        )
 
         # 验证响应结构
         assert response_data["status"] in ["success", "error"]
@@ -74,16 +74,13 @@ class TestMethodologyAgent:
         """测试方法论智能体上下文构建"""
         agent = MethodologyAgent()
 
-        metadata = {
-            "title": "Test Paper",
-            "abstract": "Test abstract"
-        }
+        metadata = {"title": "Test Paper", "abstract": "Test abstract"}
 
         sections = [
             {
                 "title": "Methodology",
                 "content": "Test methodology content",
-                "section_type": "methodology"
+                "section_type": "methodology",
             }
         ]
 
@@ -102,7 +99,7 @@ class TestExperimentEvaluatorAgent:
         agent = ExperimentEvaluatorAgent()
         assert agent is not None
         assert agent.name == "ExperimentEvaluatorAgent"
-        assert hasattr(agent, 'model')
+        assert hasattr(agent, "model")
 
     @pytest.mark.asyncio
     async def test_experiment_evaluator_reply(self):
@@ -120,27 +117,26 @@ class TestExperimentEvaluatorAgent:
                 {
                     "title": "Experiments",
                     "content": "We conducted experiments on three datasets: MNIST, CIFAR-10, and ImageNet.",
-                    "section_type": "experiment"
+                    "section_type": "experiment",
                 },
                 {
                     "title": "Results",
                     "content": "Our method achieved 95% accuracy on MNIST, outperforming the baseline by 5%.",
-                    "section_type": "results"
-                }
-            ]
+                    "section_type": "results",
+                },
+            ],
         }
 
-        input_data = {
-            "paper_content": test_paper_content,
-            "output_language": "en"
-        }
+        input_data = {"paper_content": test_paper_content, "output_language": "en"}
 
         msg = Msg(name="user", content=json.dumps(input_data), role="user")
 
         # 调用agent
         response = await agent.reply(msg)
         # response.content 已经是字典，不需要 json.loads
-        response_data = response.content if isinstance(response.content, dict) else json.loads(response.content)
+        response_data = (
+            response.content if isinstance(response.content, dict) else json.loads(response.content)
+        )
 
         # 验证响应结构
         assert response_data["status"] in ["success", "error"]
@@ -157,16 +153,13 @@ class TestExperimentEvaluatorAgent:
         """测试实验评估智能体上下文构建"""
         agent = ExperimentEvaluatorAgent()
 
-        metadata = {
-            "title": "Experiment Paper",
-            "abstract": "Experimental study"
-        }
+        metadata = {"title": "Experiment Paper", "abstract": "Experimental study"}
 
         sections = [
             {
                 "title": "Experiments",
                 "content": "Test experiment content",
-                "section_type": "experiment"
+                "section_type": "experiment",
             }
         ]
 
@@ -196,20 +189,17 @@ class TestParallelProcessing:
                 {
                     "title": "Methodology",
                     "content": "Test methodology",
-                    "section_type": "methodology"
+                    "section_type": "methodology",
                 },
                 {
                     "title": "Experiments",
                     "content": "Test experiments",
-                    "section_type": "experiment"
-                }
-            ]
+                    "section_type": "experiment",
+                },
+            ],
         }
 
-        input_data = {
-            "paper_content": test_paper_content,
-            "output_language": "en"
-        }
+        input_data = {"paper_content": test_paper_content, "output_language": "en"}
 
         msg = Msg(name="user", content=json.dumps(input_data), role="user")
 
@@ -227,8 +217,16 @@ class TestParallelProcessing:
         assert experiment_response is not None
 
         # response.content 已经是字典，不需要 json.loads
-        methodology_data = methodology_response.content if isinstance(methodology_response.content, dict) else json.loads(methodology_response.content)
-        experiment_data = experiment_response.content if isinstance(experiment_response.content, dict) else json.loads(experiment_response.content)
+        methodology_data = (
+            methodology_response.content
+            if isinstance(methodology_response.content, dict)
+            else json.loads(methodology_response.content)
+        )
+        experiment_data = (
+            experiment_response.content
+            if isinstance(experiment_response.content, dict)
+            else json.loads(experiment_response.content)
+        )
 
         assert methodology_data["status"] in ["success", "error"]
         assert experiment_data["status"] in ["success", "error"]

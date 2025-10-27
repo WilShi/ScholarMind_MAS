@@ -1,6 +1,6 @@
 import json
 import time
-from typing import Dict, Any
+from typing import Any, Dict
 
 from agentscope.message import Msg
 
@@ -10,12 +10,13 @@ from ..utils.logger import agent_logger
 
 class SynthesizerAgent(ScholarMindAgentBase):
     """综合报告智能体"""
+
     def __init__(self, **kwargs):
         # Initialize base class with proper name parameter
         super().__init__(
             name="SynthesizerAgent",
             sys_prompt="You are an expert in synthesizing comprehensive reports from academic paper analysis.",
-            **kwargs
+            **kwargs,
         )
 
     async def reply(self, msg: Msg) -> Msg:
@@ -29,7 +30,7 @@ class SynthesizerAgent(ScholarMindAgentBase):
         处理综合报告生成逻辑（符合基类标准）
         """
         start_time = time.time()
-        
+
         try:
             paper_content = input_data.get("paper_content", {})
             user_background = input_data.get("user_background", "intermediate")
@@ -47,14 +48,22 @@ class SynthesizerAgent(ScholarMindAgentBase):
             if self.model:
                 # Build context for LLM (including all analysis results)
                 paper_context = self._build_paper_context(
-                    metadata, sections, user_background,
-                    methodology_analysis, experiment_evaluation, insight_analysis
+                    metadata,
+                    sections,
+                    user_background,
+                    methodology_analysis,
+                    experiment_evaluation,
+                    insight_analysis,
                 )
 
                 # Generate analysis using LLM (now async)
                 analysis = await self._generate_analysis_with_llm(
-                    paper_context, user_background, output_language,
-                    methodology_analysis, experiment_evaluation, insight_analysis
+                    paper_context,
+                    user_background,
+                    output_language,
+                    methodology_analysis,
+                    experiment_evaluation,
+                    insight_analysis,
                 )
 
                 response_data = {
@@ -70,17 +79,19 @@ class SynthesizerAgent(ScholarMindAgentBase):
                 }
             else:
                 # Fallback: Extract information from paper content directly
-                response_data = self._generate_fallback_analysis(metadata, sections, user_background)
+                response_data = self._generate_fallback_analysis(
+                    metadata, sections, user_background
+                )
                 response_data["processing_time"] = time.time() - start_time
                 response_data["success"] = True
 
             return response_data
-            
+
         except Exception as e:
             return {
                 "success": False,
                 "error_message": str(e),
-                "processing_time": time.time() - start_time if 'start_time' in locals() else 0,
+                "processing_time": time.time() - start_time if "start_time" in locals() else 0,
             }
 
     def _build_paper_context(
@@ -90,7 +101,7 @@ class SynthesizerAgent(ScholarMindAgentBase):
         user_background: str,
         methodology_analysis: dict = None,
         experiment_evaluation: dict = None,
-        insight_analysis: dict = None  # NEW: Phase 3 addition
+        insight_analysis: dict = None,  # NEW: Phase 3 addition
     ) -> str:
         """Build context string for LLM from paper content and all analysis results"""
         context_parts = []
@@ -112,17 +123,27 @@ class SynthesizerAgent(ScholarMindAgentBase):
         if methodology_analysis:
             context_parts.append("\n--- Methodology Analysis (from MethodologyAgent) ---\n")
             if methodology_analysis.get("architecture_analysis"):
-                context_parts.append(f"Architecture: {methodology_analysis['architecture_analysis'][:300]}...\n")
+                context_parts.append(
+                    f"Architecture: {methodology_analysis['architecture_analysis'][:300]}...\n"
+                )
             if methodology_analysis.get("innovation_points"):
-                context_parts.append(f"Innovation Points: {', '.join(methodology_analysis['innovation_points'][:3])}\n")
+                context_parts.append(
+                    f"Innovation Points: {', '.join(methodology_analysis['innovation_points'][:3])}\n"
+                )
 
         # Add experiment evaluation if available
         if experiment_evaluation:
-            context_parts.append("\n--- Experiment Evaluation (from ExperimentEvaluatorAgent) ---\n")
+            context_parts.append(
+                "\n--- Experiment Evaluation (from ExperimentEvaluatorAgent) ---\n"
+            )
             if experiment_evaluation.get("experimental_setup"):
-                context_parts.append(f"Setup: {experiment_evaluation['experimental_setup'][:300]}...\n")
+                context_parts.append(
+                    f"Setup: {experiment_evaluation['experimental_setup'][:300]}...\n"
+                )
             if experiment_evaluation.get("results_analysis"):
-                context_parts.append(f"Results: {experiment_evaluation['results_analysis'][:300]}...\n")
+                context_parts.append(
+                    f"Results: {experiment_evaluation['results_analysis'][:300]}...\n"
+                )
 
         # NEW: Add insight analysis if available
         if insight_analysis:
@@ -130,11 +151,17 @@ class SynthesizerAgent(ScholarMindAgentBase):
             if insight_analysis.get("strengths"):
                 context_parts.append(f"Strengths: {', '.join(insight_analysis['strengths'][:3])}\n")
             if insight_analysis.get("weaknesses"):
-                context_parts.append(f"Weaknesses: {', '.join(insight_analysis['weaknesses'][:3])}\n")
+                context_parts.append(
+                    f"Weaknesses: {', '.join(insight_analysis['weaknesses'][:3])}\n"
+                )
             if insight_analysis.get("future_directions"):
-                context_parts.append(f"Future Directions: {', '.join(insight_analysis['future_directions'][:3])}\n")
+                context_parts.append(
+                    f"Future Directions: {', '.join(insight_analysis['future_directions'][:3])}\n"
+                )
             if insight_analysis.get("novelty_assessment"):
-                context_parts.append(f"Novelty: {insight_analysis['novelty_assessment'][:300]}...\n")
+                context_parts.append(
+                    f"Novelty: {insight_analysis['novelty_assessment'][:300]}...\n"
+                )
 
         # Add key sections (limit to avoid token limits)
         context_parts.append("\n--- Key Sections from Paper ---\n")
@@ -155,28 +182,29 @@ class SynthesizerAgent(ScholarMindAgentBase):
         output_language: str = "zh",
         methodology_analysis: dict = None,
         experiment_evaluation: dict = None,
-        insight_analysis: dict = None  # NEW: Phase 3 addition
+        insight_analysis: dict = None,  # NEW: Phase 3 addition
     ) -> dict:
         """Use LLM to generate paper analysis with integrated insights from all agents"""
         # Define background-specific instructions
         background_instructions = {
             "beginner": "Explain concepts in simple terms, avoid jargon, and provide context for technical terms.",
             "intermediate": "Use moderate technical language and assume basic familiarity with the field.",
-            "advanced": "Use technical terminology freely and focus on novel contributions and technical details."
+            "advanced": "Use technical terminology freely and focus on novel contributions and technical details.",
         }
 
-        instruction = background_instructions.get(user_background, background_instructions["intermediate"])
+        instruction = background_instructions.get(
+            user_background, background_instructions["intermediate"]
+        )
 
         # Language requirement
-        language_instruction = {
-            "zh": "Chinese (中文)",
-            "en": "English"
-        }[output_language]
+        language_instruction = {"zh": "Chinese (中文)", "en": "English"}[output_language]
 
         # Build additional context string for all agent outputs
         additional_context = ""
         if methodology_analysis or experiment_evaluation or insight_analysis:
-            additional_context = "\n\nYou have access to comprehensive analysis from multiple specialized agents:\n"
+            additional_context = (
+                "\n\nYou have access to comprehensive analysis from multiple specialized agents:\n"
+            )
             if methodology_analysis:
                 additional_context += "- Methodology Agent has deeply analyzed the technical approach, architecture, and innovations\n"
             if experiment_evaluation:
@@ -205,7 +233,7 @@ Please provide a comprehensive analysis in JSON format with the following struct
             # Call LLM - OpenAIChatModel expects messages list
             messages = [
                 {"role": "system", "content": self.sys_prompt},
-                {"role": "user", "content": prompt}
+                {"role": "user", "content": prompt},
             ]
 
             agent_logger.info("正在调用LLM分析论文...")
@@ -217,32 +245,32 @@ Please provide a comprehensive analysis in JSON format with the following struct
             # In streaming mode, each chunk contains cumulative text from start to current position
             # So we only need the last chunk which contains the complete response
             response_text = ""
-            if hasattr(response, '__aiter__'):
+            if hasattr(response, "__aiter__"):
                 # It's an async generator - collect all chunks
                 last_chunk_text = ""
                 async for chunk in response:
                     # ChatResponse object has a 'content' field which is a list of dicts
-                    if hasattr(chunk, 'content'):
+                    if hasattr(chunk, "content"):
                         content = chunk.content
                         if isinstance(content, list):
                             current_text = ""
                             for item in content:
-                                if isinstance(item, dict) and 'text' in item:
-                                    current_text += item['text']
+                                if isinstance(item, dict) and "text" in item:
+                                    current_text += item["text"]
                             last_chunk_text = current_text  # Keep only the last chunk
                         elif isinstance(content, str):
                             last_chunk_text = content
                     elif isinstance(chunk, dict):
-                        last_chunk_text = chunk.get('text', chunk.get('content', ''))
+                        last_chunk_text = chunk.get("text", chunk.get("content", ""))
                     elif isinstance(chunk, str):
                         last_chunk_text = chunk
 
                 # Use the last chunk which contains the complete response
                 response_text = last_chunk_text
-            elif hasattr(response, 'text'):
+            elif hasattr(response, "text"):
                 response_text = response.text
             elif isinstance(response, dict):
-                response_text = response.get('text', response.get('content', str(response)))
+                response_text = response.get("text", response.get("content", str(response)))
             elif isinstance(response, str):
                 response_text = response
             else:
@@ -251,7 +279,8 @@ Please provide a comprehensive analysis in JSON format with the following struct
             # Try to extract JSON from response
             # Sometimes LLM adds markdown code blocks
             import re
-            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response_text, re.DOTALL)
+
+            json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", response_text, re.DOTALL)
             if json_match:
                 response_text = json_match.group(1)
 
@@ -268,7 +297,7 @@ Please provide a comprehensive analysis in JSON format with the following struct
                 "key_contributions": ["LLM response parsing failed"],
                 "methodology_summary": "LLM response parsing failed",
                 "experiment_summary": "LLM response parsing failed",
-                "insights": ["Please check logs for details"]
+                "insights": ["Please check logs for details"],
             }
         except Exception as e:
             agent_logger.error(f"LLM generation failed: {e}")
@@ -279,10 +308,12 @@ Please provide a comprehensive analysis in JSON format with the following struct
                 "key_contributions": ["LLM analysis unavailable"],
                 "methodology_summary": "LLM analysis unavailable",
                 "experiment_summary": "LLM analysis unavailable",
-                "insights": ["Please check logs for details"]
+                "insights": ["Please check logs for details"],
             }
 
-    def _generate_fallback_analysis(self, metadata: dict, sections: list, user_background: str) -> dict:
+    def _generate_fallback_analysis(
+        self, metadata: dict, sections: list, user_background: str
+    ) -> dict:
         """Generate basic analysis without LLM by extracting from content"""
         # Extract abstract as summary
         summary = metadata.get("abstract", "No abstract available.")
@@ -301,21 +332,27 @@ Please provide a comprehensive analysis in JSON format with the following struct
             if section_type in ["conclusion", "introduction"] and len(key_contributions) < 3:
                 # Simple extraction: first 3 sentences
                 sentences = section_content.split(". ")[:3]
-                key_contributions.extend([s.strip() + "." for s in sentences if len(s.strip()) > 20])
+                key_contributions.extend(
+                    [s.strip() + "." for s in sentences if len(s.strip()) > 20]
+                )
 
             # Extract methodology
             if section_type == "methodology" and methodology_summary == "Not found":
-                methodology_summary = section_content[:500] + ("..." if len(section_content) > 500 else "")
+                methodology_summary = section_content[:500] + (
+                    "..." if len(section_content) > 500 else ""
+                )
 
             # Extract experiments
             if section_type == "experiment" and experiment_summary == "Not found":
-                experiment_summary = section_content[:500] + ("..." if len(section_content) > 500 else "")
+                experiment_summary = section_content[:500] + (
+                    "..." if len(section_content) > 500 else ""
+                )
 
         # Generate basic insights
         insights = [
             f"This paper is titled '{metadata.get('title', 'Unknown')}'",
             f"Authored by: {', '.join(metadata.get('authors', ['Unknown authors']))}",
-            f"Contains {len(sections)} sections"
+            f"Contains {len(sections)} sections",
         ]
 
         if metadata.get("keywords"):
@@ -324,7 +361,9 @@ Please provide a comprehensive analysis in JSON format with the following struct
         return {
             "title": f"Basic Analysis of: {metadata.get('title', 'Unknown Title')}",
             "summary": summary,
-            "key_contributions": key_contributions[:5] if key_contributions else ["No contributions extracted"],
+            "key_contributions": (
+                key_contributions[:5] if key_contributions else ["No contributions extracted"]
+            ),
             "methodology_summary": methodology_summary,
             "experiment_summary": experiment_summary,
             "insights": insights,

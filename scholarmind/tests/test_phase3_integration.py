@@ -5,11 +5,12 @@ Phase 3 Tests - Insight Generation and Complete 5-Agent Workflow
 
 import asyncio
 import json
+
 import pytest
+from agentscope.message import Msg
 
 from scholarmind.agents.insight_generation_agent import InsightGenerationAgent
 from scholarmind.workflows.scholarmind_pipeline import ScholarMindPipeline
-from agentscope.message import Msg
 
 
 class TestInsightGenerationAgent:
@@ -20,7 +21,7 @@ class TestInsightGenerationAgent:
         agent = InsightGenerationAgent()
         assert agent is not None
         assert agent.name == "InsightGenerationAgent"
-        assert hasattr(agent, 'model')
+        assert hasattr(agent, "model")
 
     @pytest.mark.asyncio
     async def test_insight_agent_reply(self):
@@ -38,34 +39,34 @@ class TestInsightGenerationAgent:
                 {
                     "title": "Conclusion",
                     "content": "Our work has both strengths and limitations. Future work should address scalability.",
-                    "section_type": "conclusion"
+                    "section_type": "conclusion",
                 },
                 {
                     "title": "Discussion",
                     "content": "The proposed method shows promise but requires further validation.",
-                    "section_type": "discussion"
-                }
-            ]
+                    "section_type": "discussion",
+                },
+            ],
         }
 
         # 模拟来自其他智能体的分析
         methodology_analysis = {
             "innovation_points": ["Novel architecture", "Improved efficiency"],
             "architecture_analysis": "The paper proposes a new neural network architecture.",
-            "technical_details": "Uses attention mechanisms and skip connections."
+            "technical_details": "Uses attention mechanisms and skip connections.",
         }
 
         experiment_evaluation = {
             "limitations": ["Small dataset", "Limited baselines", "Computational cost"],
             "validity_assessment": "The experiments are well-designed but could be more comprehensive.",
-            "results_analysis": "Results show improvement over baselines."
+            "results_analysis": "Results show improvement over baselines.",
         }
 
         input_data = {
             "paper_content": test_paper_content,
             "methodology_analysis": methodology_analysis,
             "experiment_evaluation": experiment_evaluation,
-            "output_language": "en"
+            "output_language": "en",
         }
 
         msg = Msg(name="user", content=json.dumps(input_data), role="user")
@@ -73,7 +74,9 @@ class TestInsightGenerationAgent:
         # 调用agent
         response = await agent.reply(msg)
         # response.content 已经是字典，不需要 json.loads
-        response_data = response.content if isinstance(response.content, dict) else json.loads(response.content)
+        response_data = (
+            response.content if isinstance(response.content, dict) else json.loads(response.content)
+        )
 
         # 验证响应结构
         assert response_data["status"] in ["success", "error"]
@@ -93,30 +96,22 @@ class TestInsightGenerationAgent:
         """测试洞察生成智能体上下文构建"""
         agent = InsightGenerationAgent()
 
-        metadata = {
-            "title": "Test Paper",
-            "abstract": "Test abstract"
-        }
+        metadata = {"title": "Test Paper", "abstract": "Test abstract"}
 
         sections = [
             {
                 "title": "Conclusion",
                 "content": "Test conclusion content",
-                "section_type": "conclusion"
+                "section_type": "conclusion",
             }
         ]
 
-        methodology_analysis = {
-            "innovation_points": ["Innovation 1", "Innovation 2"]
-        }
+        methodology_analysis = {"innovation_points": ["Innovation 1", "Innovation 2"]}
 
-        experiment_evaluation = {
-            "limitations": ["Limitation 1"]
-        }
+        experiment_evaluation = {"limitations": ["Limitation 1"]}
 
         context = agent._build_insight_context(
-            metadata, sections,
-            methodology_analysis, experiment_evaluation
+            metadata, sections, methodology_analysis, experiment_evaluation
         )
 
         assert "Test Paper" in context
@@ -133,16 +128,16 @@ class TestComplete5AgentWorkflow:
         pipeline = ScholarMindPipeline()
 
         assert pipeline is not None
-        assert hasattr(pipeline, 'resource_agent')
-        assert hasattr(pipeline, 'methodology_agent')
-        assert hasattr(pipeline, 'experiment_agent')
-        assert hasattr(pipeline, 'insight_agent')
-        assert hasattr(pipeline, 'synthesizer_agent')
+        assert hasattr(pipeline, "resource_agent")
+        assert hasattr(pipeline, "methodology_agent")
+        assert hasattr(pipeline, "experiment_agent")
+        assert hasattr(pipeline, "insight_agent")
+        assert hasattr(pipeline, "synthesizer_agent")
 
         # 验证工作流状态
         status = pipeline.get_pipeline_status()
-        assert len(status['agents']) == 5
-        assert status['pipeline_type'] == "Complete DAG (5 agents)"
+        assert len(status["agents"]) == 5
+        assert status["pipeline_type"] == "Complete DAG (5 agents)"
 
     @pytest.mark.asyncio
     async def test_5_agent_workflow_stages(self):
@@ -154,30 +149,30 @@ class TestComplete5AgentWorkflow:
             "metadata": {
                 "title": "5-Agent Workflow Test",
                 "authors": ["Test Author"],
-                "abstract": "Testing complete workflow with 5 agents."
+                "abstract": "Testing complete workflow with 5 agents.",
             },
             "sections": [
                 {
                     "title": "Introduction",
                     "content": "This paper introduces a novel approach.",
-                    "section_type": "introduction"
+                    "section_type": "introduction",
                 },
                 {
                     "title": "Methodology",
                     "content": "We propose a new method based on transformers.",
-                    "section_type": "methodology"
+                    "section_type": "methodology",
                 },
                 {
                     "title": "Experiments",
                     "content": "We evaluate on three benchmarks and achieve SOTA results.",
-                    "section_type": "experiment"
+                    "section_type": "experiment",
                 },
                 {
                     "title": "Conclusion",
                     "content": "Our method shows promise. Future work includes scaling to larger datasets.",
-                    "section_type": "conclusion"
-                }
-            ]
+                    "section_type": "conclusion",
+                },
+            ],
         }
 
         # 测试资源检索阶段
@@ -198,7 +193,7 @@ class TestComplete5AgentWorkflow:
             test_paper_content,
             methodology_result.get("data") if methodology_result.get("success") else None,
             experiment_result.get("data") if experiment_result.get("success") else None,
-            "en"
+            "en",
         )
         assert "success" in insight_result
 
@@ -233,7 +228,7 @@ class TestPhase3Integration:
             input_type="text",
             user_background="intermediate",
             save_report=False,
-            output_language="en"
+            output_language="en",
         )
 
         # 验证结果

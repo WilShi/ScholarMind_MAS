@@ -3,8 +3,8 @@ ScholarMind Structured Output Models
 智读ScholarMind结构化输出模型
 """
 
-from typing import Any, Dict, Generic, List, Optional, TypeVar
 from enum import Enum
+from typing import Any, Dict, Generic, List, Optional, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -28,7 +28,9 @@ class PaperSection(BaseModel):
 
     title: str = Field(description="章节标题")
     content: str = Field(description="章节内容")
-    section_type: str = Field(description="章节类型：introduction, methodology, experiment, conclusion, etc.")
+    section_type: str = Field(
+        description="章节类型：introduction, methodology, experiment, conclusion, etc."
+    )
 
 
 class PaperContent(BaseModel):
@@ -123,8 +125,10 @@ class SynthesizerOutput(BaseModel):
 
 # ==================== 统一 API 响应模型 ====================
 
+
 class ResponseStatus(str, Enum):
     """响应状态枚举"""
+
     SUCCESS = "success"
     ERROR = "error"
     PARTIAL = "partial"  # 部分成功
@@ -146,6 +150,7 @@ class APIResponse(BaseModel, Generic[DataT]):
         ...     message="方法论分析完成"
         ... )
     """
+
     status: ResponseStatus = Field(description="响应状态")
     data: Optional[DataT] = Field(default=None, description="响应数据")
     message: Optional[str] = Field(default=None, description="响应消息")
@@ -159,6 +164,7 @@ class APIResponse(BaseModel, Generic[DataT]):
 
 class ErrorDetail(BaseModel):
     """错误详情模型"""
+
     code: str = Field(description="错误代码")
     message: str = Field(description="错误消息")
     field: Optional[str] = Field(default=None, description="相关字段")
@@ -167,6 +173,7 @@ class ErrorDetail(BaseModel):
 
 class PaginationMetadata(BaseModel):
     """分页元数据"""
+
     page: int = Field(description="当前页码", ge=1)
     page_size: int = Field(description="每页大小", ge=1, le=100)
     total_items: int = Field(description="总项目数", ge=0)
@@ -175,6 +182,7 @@ class PaginationMetadata(BaseModel):
 
 class PaginatedResponse(BaseModel, Generic[DataT]):
     """分页响应模型"""
+
     status: ResponseStatus = Field(description="响应状态")
     data: List[DataT] = Field(default_factory=list, description="数据列表")
     pagination: PaginationMetadata = Field(description="分页信息")
@@ -183,10 +191,9 @@ class PaginatedResponse(BaseModel, Generic[DataT]):
 
 # ==================== 便捷构造函数 ====================
 
+
 def success_response(
-    data: Any = None,
-    message: str = "操作成功",
-    metadata: Optional[Dict[str, Any]] = None
+    data: Any = None, message: str = "操作成功", metadata: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """
     创建成功响应
@@ -205,7 +212,7 @@ def success_response(
         "message": message,
         "error": None,
         "error_code": None,
-        "metadata": metadata or {}
+        "metadata": metadata or {},
     }
 
 
@@ -213,7 +220,7 @@ def error_response(
     error: str,
     error_code: Optional[str] = None,
     message: Optional[str] = None,
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     创建错误响应
@@ -233,7 +240,7 @@ def error_response(
         "message": message or "操作失败",
         "error": error,
         "error_code": error_code,
-        "metadata": metadata or {}
+        "metadata": metadata or {},
     }
 
 
@@ -241,7 +248,7 @@ def partial_response(
     data: Any = None,
     message: str = "部分成功",
     error: Optional[str] = None,
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     创建部分成功响应
@@ -261,5 +268,5 @@ def partial_response(
         "message": message,
         "error": error,
         "error_code": None,
-        "metadata": metadata or {}
+        "metadata": metadata or {},
     }

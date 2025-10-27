@@ -5,7 +5,7 @@ Methodology Agent
 
 import json
 import time
-from typing import Dict, Any
+from typing import Any, Dict
 
 from agentscope.message import Msg
 
@@ -21,13 +21,13 @@ class MethodologyAgent(ScholarMindAgentBase):
         super().__init__(
             name="MethodologyAgent",
             sys_prompt="You are an expert in analyzing academic papers' methodologies, algorithms, and technical innovations.",
-            **kwargs
+            **kwargs,
         )
 
     async def _process_logic(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """处理方法论分析逻辑"""
         start_time = time.time()
-        
+
         try:
             paper_content = input_data.get("paper_content", {})
             output_language = input_data.get("output_language", "zh")
@@ -53,9 +53,9 @@ class MethodologyAgent(ScholarMindAgentBase):
                 "success": True,
                 "error_message": None,
             }
-            
+
             return response_data
-            
+
         except Exception as e:
             return {
                 "success": False,
@@ -76,7 +76,14 @@ class MethodologyAgent(ScholarMindAgentBase):
 
         # Focus on methodology-related sections
         context_parts.append("\nMethodology Sections:\n")
-        methodology_types = ["methodology", "method", "approach", "model", "algorithm", "architecture"]
+        methodology_types = [
+            "methodology",
+            "method",
+            "approach",
+            "model",
+            "algorithm",
+            "architecture",
+        ]
 
         for section in sections:
             section_title = section.get("title", "").lower()
@@ -84,11 +91,15 @@ class MethodologyAgent(ScholarMindAgentBase):
             section_content = section.get("content", "")
 
             # Check if this is a methodology-related section
-            if section_type in methodology_types or any(kw in section_title for kw in methodology_types):
+            if section_type in methodology_types or any(
+                kw in section_title for kw in methodology_types
+            ):
                 # Truncate long sections
                 if len(section_content) > 1000:
                     section_content = section_content[:1000] + "..."
-                context_parts.append(f"\n## {section.get('title', 'Untitled')}\n{section_content}\n")
+                context_parts.append(
+                    f"\n## {section.get('title', 'Untitled')}\n{section_content}\n"
+                )
 
         # Also include related work sections for comparison
         for section in sections:
@@ -104,13 +115,12 @@ class MethodologyAgent(ScholarMindAgentBase):
 
         return "".join(context_parts)
 
-    async def _generate_methodology_analysis(self, paper_context: str, output_language: str = "zh") -> dict:
+    async def _generate_methodology_analysis(
+        self, paper_context: str, output_language: str = "zh"
+    ) -> dict:
         """Use LLM to generate deep methodology analysis"""
         # Language requirement
-        language_instruction = {
-            "zh": "Chinese (中文)",
-            "en": "English"
-        }[output_language]
+        language_instruction = {"zh": "Chinese (中文)", "en": "English"}[output_language]
 
         # Create prompt for LLM
         prompt = f"""You are analyzing the methodology of an academic paper. Please provide a deep technical analysis.
@@ -134,21 +144,22 @@ Please provide a comprehensive methodology analysis in JSON format with the foll
             # Call LLM using base class safe method
             messages = [
                 {"role": "system", "content": self.sys_prompt},
-                {"role": "user", "content": prompt}
+                {"role": "user", "content": prompt},
             ]
 
             agent_logger.info("MethodologyAgent正在调用LLM分析方法论...")
 
             # Use base class safe model call
             response = await self._safe_model_call(messages)
-            
+
             if response.get("success", False):
                 # Parse JSON response
                 response_text = response.get("content", "")
-                
+
                 # Try to extract JSON from response
                 import re
-                json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response_text, re.DOTALL)
+
+                json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", response_text, re.DOTALL)
                 if json_match:
                     response_text = json_match.group(1)
 
@@ -202,14 +213,22 @@ Please provide a comprehensive methodology analysis in JSON format with the foll
             # Try to extract innovations from introduction or conclusion
             if section_type in ["introduction", "conclusion"]:
                 sentences = section_content.split(". ")[:3]
-                innovation_points.extend([s.strip() + "." for s in sentences if len(s.strip()) > 20])
+                innovation_points.extend(
+                    [s.strip() + "." for s in sentences if len(s.strip()) > 20]
+                )
 
         return {
-            "architecture_analysis": " ".join(methodology_content[:2]) if methodology_content else "Not found in paper",
-            "algorithm_flow": methodology_content[0] if methodology_content else "Not found in paper",
+            "architecture_analysis": (
+                " ".join(methodology_content[:2]) if methodology_content else "Not found in paper"
+            ),
+            "algorithm_flow": (
+                methodology_content[0] if methodology_content else "Not found in paper"
+            ),
             "innovation_points": innovation_points[:3] if innovation_points else ["Not extracted"],
             "related_work_comparison": "Fallback mode - LLM required for detailed comparison",
-            "technical_details": methodology_content[1] if len(methodology_content) > 1 else "Not found in paper",
+            "technical_details": (
+                methodology_content[1] if len(methodology_content) > 1 else "Not found in paper"
+            ),
             "complexity_analysis": None,
             "mathematical_formulation": None,
         }

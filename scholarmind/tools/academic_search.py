@@ -12,6 +12,7 @@ from agentscope.tool import Toolkit
 from scholarly import scholarly
 
 from config import AcademicAPIConfig
+
 from ..utils.logger import tool_logger
 
 
@@ -117,14 +118,20 @@ class AcademicSearcher:
             papers = response["data"]
             if papers:
                 # 返回第一个最匹配的结果
-                return {"paper": papers[0], "total_results": len(papers), "source": "semantic_scholar"}
+                return {
+                    "paper": papers[0],
+                    "total_results": len(papers),
+                    "source": "semantic_scholar",
+                }
 
         return {}
 
     def _lookup_doi_semantic_scholar(self, doi: str) -> Dict[str, Any]:
         """Semantic Scholar DOI查找"""
         url = f"{self.semantic_scholar_base_url}/paper/DOI:{doi}"
-        params = {"fields": "title,authors,abstract,year,venue,citationCount,externalIds,url,references,citations"}
+        params = {
+            "fields": "title,authors,abstract,year,venue,citationCount,externalIds,url,references,citations"
+        }
 
         headers = {}
         if self.semantic_scholar_api_key:
@@ -188,15 +195,19 @@ class AcademicSearcher:
                 # 转换所有结果
                 paper_list = []
                 for paper in papers:
-                    paper_list.append({
-                        "title": paper.title,
-                        "authors": [author.name for author in paper.authors],
-                        "abstract": paper.summary,
-                        "published": paper.published.strftime("%Y-%m-%d") if paper.published else None,
-                        "arxiv_id": paper.get_short_id(),
-                        "pdf_url": paper.pdf_url,
-                        "primary_category": paper.primary_category,
-                    })
+                    paper_list.append(
+                        {
+                            "title": paper.title,
+                            "authors": [author.name for author in paper.authors],
+                            "abstract": paper.summary,
+                            "published": (
+                                paper.published.strftime("%Y-%m-%d") if paper.published else None
+                            ),
+                            "arxiv_id": paper.get_short_id(),
+                            "pdf_url": paper.pdf_url,
+                            "primary_category": paper.primary_category,
+                        }
+                    )
 
                 return {
                     "papers": paper_list,  # 返回所有论文列表
@@ -344,12 +355,16 @@ def academic_search_by_arxiv_id_tool(arxiv_id: str) -> Dict[str, Any]:
     return _academic_searcher_instance.search_paper_by_arxiv_id(arxiv_id)
 
 
-def academic_get_citation_info_tool(paper_id: str, source: str = "semantic_scholar") -> Dict[str, Any]:
+def academic_get_citation_info_tool(
+    paper_id: str, source: str = "semantic_scholar"
+) -> Dict[str, Any]:
     """获取给定论文ID的引用信息。"""
     return _academic_searcher_instance.get_citation_info(paper_id, source)
 
 
-def academic_get_reference_info_tool(paper_id: str, source: str = "semantic_scholar") -> Dict[str, Any]:
+def academic_get_reference_info_tool(
+    paper_id: str, source: str = "semantic_scholar"
+) -> Dict[str, Any]:
     """获取给定论文ID的参考文献信息。"""
     return _academic_searcher_instance.get_reference_info(paper_id, source)
 

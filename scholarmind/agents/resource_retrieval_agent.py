@@ -8,7 +8,6 @@ from agentscope.message import Msg
 from agentscope.tool import Toolkit
 
 from config import get_model_config
-from ..utils.logger import agent_logger
 
 from ..tools.academic_search import (
     _academic_searcher_instance,
@@ -19,10 +18,12 @@ from ..tools.academic_search import (
     academic_search_by_title_tool,
 )
 from ..tools.paper_parser import parse_paper_tool
+from ..utils.logger import agent_logger
 
 
 class ResourceRetrievalAgent(ReActAgent):
     """资源检索智能体 - 专门处理学术论文检索和解析"""
+
     def __init__(self, **kwargs):
         toolkit = Toolkit()
         toolkit.register_tool_function(parse_paper_tool)
@@ -55,7 +56,7 @@ class ResourceRetrievalAgent(ReActAgent):
                 input_data = msg.content
             else:
                 input_data = json.loads(msg.content)
-            
+
             paper_input = input_data.get("paper_input", "")
             input_type = input_data.get("input_type", "file")
 
@@ -84,16 +85,18 @@ class ResourceRetrievalAgent(ReActAgent):
 
             if not isinstance(paper_content, PaperContent):
                 # 尝试从字典或其他格式转换
-                if isinstance(paper_content, dict) or (hasattr(paper_content, '__dict__') and not hasattr(paper_content, 'metadata')):
+                if isinstance(paper_content, dict) or (
+                    hasattr(paper_content, "__dict__") and not hasattr(paper_content, "metadata")
+                ):
                     from ..models.structured_outputs import PaperMetadata, PaperSection
 
                     # 如果是对象但不是dict，转换为dict
                     if not isinstance(paper_content, dict):
-                        if hasattr(paper_content, 'model_dump'):
+                        if hasattr(paper_content, "model_dump"):
                             paper_dict = paper_content.model_dump()
-                        elif hasattr(paper_content, 'dict'):
+                        elif hasattr(paper_content, "dict"):
                             paper_dict = paper_content.dict()
-                        elif hasattr(paper_content, '__dict__'):
+                        elif hasattr(paper_content, "__dict__"):
                             paper_dict = paper_content.__dict__
                         else:
                             raise TypeError(f"无法转换paper_content类型: {type(paper_content)}")
@@ -101,45 +104,49 @@ class ResourceRetrievalAgent(ReActAgent):
                         paper_dict = paper_content
 
                     # 从字典构建Paper Content对象
-                    metadata_dict = paper_dict.get('metadata', {})
-                    if not isinstance(metadata_dict, dict) and hasattr(metadata_dict, '__dict__'):
-                        metadata_dict = metadata_dict.__dict__ if not hasattr(metadata_dict, 'model_dump') else metadata_dict.model_dump()
+                    metadata_dict = paper_dict.get("metadata", {})
+                    if not isinstance(metadata_dict, dict) and hasattr(metadata_dict, "__dict__"):
+                        metadata_dict = (
+                            metadata_dict.__dict__
+                            if not hasattr(metadata_dict, "model_dump")
+                            else metadata_dict.model_dump()
+                        )
 
                     metadata = PaperMetadata(
-                        title=metadata_dict.get('title', ''),
-                        authors=metadata_dict.get('authors', []),
-                        abstract=metadata_dict.get('abstract', ''),
-                        publication_year=metadata_dict.get('publication_year'),
-                        keywords=metadata_dict.get('keywords', []),
-                        doi=metadata_dict.get('doi'),
-                        arxiv_id=metadata_dict.get('arxiv_id'),
-                        references=metadata_dict.get('references', [])
+                        title=metadata_dict.get("title", ""),
+                        authors=metadata_dict.get("authors", []),
+                        abstract=metadata_dict.get("abstract", ""),
+                        publication_year=metadata_dict.get("publication_year"),
+                        keywords=metadata_dict.get("keywords", []),
+                        doi=metadata_dict.get("doi"),
+                        arxiv_id=metadata_dict.get("arxiv_id"),
+                        references=metadata_dict.get("references", []),
                     )
 
                     sections_list = []
-                    for section_item in paper_dict.get('sections', []):
+                    for section_item in paper_dict.get("sections", []):
                         if isinstance(section_item, dict):
                             section_dict = section_item
-                        elif hasattr(section_item, 'model_dump'):
+                        elif hasattr(section_item, "model_dump"):
                             section_dict = section_item.model_dump()
-                        elif hasattr(section_item, '__dict__'):
+                        elif hasattr(section_item, "__dict__"):
                             section_dict = section_item.__dict__
                         else:
                             continue
 
                         section = PaperSection(
-                            title=section_dict.get('title', ''),
-                            content=section_dict.get('content', ''),
-                            section_type=section_dict.get('section_type', 'other')
+                            title=section_dict.get("title", ""),
+                            content=section_dict.get("content", ""),
+                            section_type=section_dict.get("section_type", "other"),
                         )
                         sections_list.append(section)
 
                     paper_content = PaperContent(
                         metadata=metadata,
                         sections=sections_list,
-                        full_text=paper_dict.get('full_text', ''),
-                        figures=paper_dict.get('figures', []),
-                        tables=paper_dict.get('tables', [])
+                        full_text=paper_dict.get("full_text", ""),
+                        figures=paper_dict.get("figures", []),
+                        tables=paper_dict.get("tables", []),
                     )
 
             if paper_content:
@@ -156,7 +163,9 @@ class ResourceRetrievalAgent(ReActAgent):
                     search_results = academic_search_by_title_tool(paper_content.metadata.title)
                     external_info["search_results"] = search_results
                     # 提取论文指标
-                    external_info["metrics"] = _academic_searcher_instance.extract_paper_metrics(search_results)
+                    external_info["metrics"] = _academic_searcher_instance.extract_paper_metrics(
+                        search_results
+                    )
                     processing_info["tools_used"].append("academic_search_by_title_tool")
                     agent_logger.info("外部信息搜索完成")
             except Exception as e:
@@ -179,7 +188,11 @@ class ResourceRetrievalAgent(ReActAgent):
             result = {
                 "status": "success",
                 "data": {
-                    "paper_content": paper_content.model_dump() if hasattr(paper_content, 'model_dump') else paper_content,
+                    "paper_content": (
+                        paper_content.model_dump()
+                        if hasattr(paper_content, "model_dump")
+                        else paper_content
+                    ),
                     "external_info": external_info,
                     "processing_info": processing_info,
                 },
@@ -197,24 +210,31 @@ class ResourceRetrievalAgent(ReActAgent):
             # 错误处理
             agent_logger.error(f"资源检索失败: {str(e)}")
 
-            error_result = {"status": "error", "error": str(e), "data": {"success": False, "error_message": str(e)}}
+            error_result = {
+                "status": "error",
+                "error": str(e),
+                "data": {"success": False, "error_message": str(e)},
+            }
 
             return Msg(name=self.name, content=error_result, role="assistant")
 
     def parse_paper(self, paper_input: str, input_type: str):
         """
         解析论文的同步方法，用于测试
-        
+
         Args:
             paper_input: 论文输入
             input_type: 输入类型
-            
+
         Returns:
             解析结果对象
         """
+
         # 创建模拟结果对象
         class ParseResult:
-            def __init__(self, success=True, paper_content=None, error_message=None, processing_info=None):
+            def __init__(
+                self, success=True, paper_content=None, error_message=None, processing_info=None
+            ):
                 self.success = success
                 self.paper_content = paper_content
                 self.error_message = error_message
@@ -223,6 +243,7 @@ class ResourceRetrievalAgent(ReActAgent):
         try:
             # 直接导入并使用paper_parser工具
             from ..tools.paper_parser import PaperParser
+
             parser = PaperParser()
 
             if input_type == "text":
@@ -236,10 +257,7 @@ class ResourceRetrievalAgent(ReActAgent):
                 return ParseResult(
                     success=True,
                     paper_content=paper_content,
-                    processing_info={
-                        "input_type": input_type,
-                        "processing_time": 0.1
-                    }
+                    processing_info={"input_type": input_type, "processing_time": 0.1},
                 )
             else:
                 return ParseResult(success=False, error_message="解析失败")
@@ -260,6 +278,7 @@ class ResourceRetrievalAgent(ReActAgent):
             except Exception:
                 # 如果Path处理失败，回退到os.path
                 import os
+
                 return os.path.exists(paper_input)
         elif input_type == "text":
             # 文本输入只需检查非空

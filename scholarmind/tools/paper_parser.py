@@ -10,10 +10,10 @@ from typing import Any, Dict, List
 
 import arxiv
 import pdfplumber
-from pypdf import PdfReader
 import requests
 from agentscope.tool import Toolkit
 from docx import Document
+from pypdf import PdfReader
 
 from ..models.structured_outputs import PaperContent, PaperMetadata, PaperSection
 from ..utils.logger import tool_logger
@@ -98,7 +98,7 @@ class PaperParser:
             tool_logger.warning_path("PDF解析", file_path, f"pdfplumber失败，尝试pypdf: {e}")
             # 备用方案：使用pypdf
             try:
-                with PathUtils.safe_open_file(file_path, 'rb') as file:
+                with PathUtils.safe_open_file(file_path, "rb") as file:
                     pdf_reader = PdfReader(file)
                     for page in pdf_reader.pages:
                         text_content += page.extract_text() + "\n"
@@ -118,34 +118,34 @@ class PaperParser:
             figures=self._extract_figures_info(text_content),
             tables=self._extract_tables_info(text_content),
         )
-    
+
     def _parse_file_fallback(self, file_path: str) -> PaperContent:
         """回退的文件解析方法，处理编码问题"""
         try:
             # 尝试多种编码打开文件
-            for encoding in ['utf-8', 'gbk', 'gb2312', 'latin1']:
+            for encoding in ["utf-8", "gbk", "gb2312", "latin1"]:
                 try:
-                    with open(file_path, 'r', encoding=encoding) as file:
+                    with open(file_path, "r", encoding=encoding) as file:
                         text_content = file.read()
-                        
+
                     # 提取元数据
                     metadata = self._extract_metadata_from_text(text_content, Path(file_path).name)
-                    
+
                     # 解析章节
                     sections = self._parse_sections(text_content)
-                    
+
                     return PaperContent(
                         metadata=metadata,
                         sections=sections,
                         full_text=text_content,
                         figures=[],
-                        tables=[]
+                        tables=[],
                     )
                 except UnicodeDecodeError:
                     continue
-            
+
             raise RuntimeError(f"无法读取文件: {file_path}（尝试了多种编码）")
-            
+
         except Exception as e:
             raise RuntimeError(f"文件解析失败: {str(e)}")
 
@@ -171,7 +171,7 @@ class PaperParser:
     def parse_txt(self, file_path: Path) -> PaperContent:
         """解析TXT文件"""
         try:
-            with PathUtils.safe_open_file(file_path, 'r') as file:
+            with PathUtils.safe_open_file(file_path, "r") as file:
                 text_content = file.read()
         except Exception as e:
             tool_logger.error_path("TXT文件读取", file_path, f"读取失败: {e}")
@@ -181,11 +181,7 @@ class PaperParser:
         sections = self._parse_sections(text_content)
 
         return PaperContent(
-            metadata=metadata,
-            sections=sections,
-            full_text=text_content,
-            figures=[],
-            tables=[]
+            metadata=metadata, sections=sections, full_text=text_content, figures=[], tables=[]
         )
 
     def _parse_url(self, url: str) -> PaperContent:
@@ -301,7 +297,9 @@ class PaperParser:
         if author_line_match:
             authors_str = author_line_match.group(1).strip()
             # 分割作者（支持逗号和分号分隔）
-            authors = [author.strip() for author in re.split(r"[,;]", authors_str) if author.strip()]
+            authors = [
+                author.strip() for author in re.split(r"[,;]", authors_str) if author.strip()
+            ]
         else:
             # 备用方案：查找常见的作者格式
             author_pattern = r"(?:^|\n)([A-Z][a-z]+ [A-Z][a-z]+(?:,?\s+[A-Z][a-z]+ [A-Z][a-z]+)*)"
@@ -323,7 +321,11 @@ class PaperParser:
             year = int(year_match.group(0))
 
         return PaperMetadata(
-            title=title or filename, authors=authors, abstract=abstract, publication_year=year, keywords=keywords
+            title=title or filename,
+            authors=authors,
+            abstract=abstract,
+            publication_year=year,
+            keywords=keywords,
         )
 
     def _parse_sections(self, text: str) -> List[PaperSection]:
@@ -345,7 +347,9 @@ class PaperParser:
                     continue
 
                 start_pos = match.end()
-                end_pos = matches_numbered[i + 1].start() if i + 1 < len(matches_numbered) else len(text)
+                end_pos = (
+                    matches_numbered[i + 1].start() if i + 1 < len(matches_numbered) else len(text)
+                )
 
                 section_content = text[start_pos:end_pos].strip()
 
@@ -356,12 +360,18 @@ class PaperParser:
                         section_type = sec_type
                         break
 
-                sections.append(PaperSection(title=section_title, content=section_content, section_type=section_type))
+                sections.append(
+                    PaperSection(
+                        title=section_title, content=section_content, section_type=section_type
+                    )
+                )
 
             return sections
 
         # 模式2: 简单标题后跟内容（测试用例的格式）
-        section_pattern_simple = r"(?:^|\n)\s*([A-Z][a-z]+)\s*\n\s*([^\n]+(?:\n(?![A-Z][a-z]+\s*\n)[^\n]+)*)"
+        section_pattern_simple = (
+            r"(?:^|\n)\s*([A-Z][a-z]+)\s*\n\s*([^\n]+(?:\n(?![A-Z][a-z]+\s*\n)[^\n]+)*)"
+        )
         matches_simple = list(re.finditer(section_pattern_simple, text, re.MULTILINE | re.DOTALL))
 
         if len(matches_simple) >= 3:  # 如果找到至少3个章节
@@ -381,7 +391,11 @@ class PaperParser:
                         section_type = sec_type
                         break
 
-                sections.append(PaperSection(title=section_title, content=section_content, section_type=section_type))
+                sections.append(
+                    PaperSection(
+                        title=section_title, content=section_content, section_type=section_type
+                    )
+                )
 
             return sections
 
@@ -409,7 +423,11 @@ class PaperParser:
                         section_type = sec_type
                         break
 
-                sections.append(PaperSection(title=section_title, content=section_content, section_type=section_type))
+                sections.append(
+                    PaperSection(
+                        title=section_title, content=section_content, section_type=section_type
+                    )
+                )
 
             return sections
 
@@ -424,15 +442,21 @@ class PaperParser:
         figures = []
 
         # 改进的图表提取模式 - 支持跨行匹配
-        figure_pattern = r"(?i)figure\s+(\d+)[.:]?\s*([^\n]+(?:\n(?!figure\s+\d+|table\s+\d+)[^\n]+)*)"
+        figure_pattern = (
+            r"(?i)figure\s+(\d+)[.:]?\s*([^\n]+(?:\n(?!figure\s+\d+|table\s+\d+)[^\n]+)*)"
+        )
         matches = re.finditer(figure_pattern, text, re.MULTILINE)
 
         for match in matches:
             caption = match.group(2).strip()
             # 清理多余的空白字符
-            caption = re.sub(r'\s+', ' ', caption)
+            caption = re.sub(r"\s+", " ", caption)
             figures.append(
-                {"figure_id": match.group(1), "caption": caption[:200], "type": "figure"}  # 限制长度
+                {
+                    "figure_id": match.group(1),
+                    "caption": caption[:200],
+                    "type": "figure",
+                }  # 限制长度
             )
 
         return figures
@@ -442,13 +466,15 @@ class PaperParser:
         tables = []
 
         # 改进的表格提取模式 - 支持跨行匹配
-        table_pattern = r"(?i)table\s+(\d+)[.:]?\s*([^\n]+(?:\n(?!table\s+\d+|figure\s+\d+)[^\n]+)*)"
+        table_pattern = (
+            r"(?i)table\s+(\d+)[.:]?\s*([^\n]+(?:\n(?!table\s+\d+|figure\s+\d+)[^\n]+)*)"
+        )
         matches = re.finditer(table_pattern, text, re.MULTILINE)
 
         for match in matches:
             caption = match.group(2).strip()
             # 清理多余的空白字符
-            caption = re.sub(r'\s+', ' ', caption)
+            caption = re.sub(r"\s+", " ", caption)
             tables.append(
                 {"table_id": match.group(1), "caption": caption[:200], "type": "table"}  # 限制长度
             )

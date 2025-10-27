@@ -57,7 +57,9 @@ class TestBasicFunctionality:
         """
 
         # 创建临时文件
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False, encoding="utf-8") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".txt", delete=False, encoding="utf-8"
+        ) as f:
             f.write(sample_text)
             temp_file = f.name
 

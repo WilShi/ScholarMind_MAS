@@ -160,7 +160,9 @@ class ReportGenerator:
 """,
         }
 
-    def generate_summary_report(self, paper_content: PaperContent, user_background: str = "general") -> str:
+    def generate_summary_report(
+        self, paper_content: PaperContent, user_background: str = "general"
+    ) -> str:
         """
 
         生成摘要报告
@@ -237,7 +239,9 @@ class ReportGenerator:
             insights=insights,
         )
 
-    def generate_detailed_report(self, paper_content: PaperContent, user_background: str = "general") -> str:
+    def generate_detailed_report(
+        self, paper_content: PaperContent, user_background: str = "general"
+    ) -> str:
         """生成详细报告"""
 
         metadata = paper_content.metadata
@@ -285,7 +289,14 @@ class ReportGenerator:
 
         paper_content.metadata.abstract.lower()
 
-        contribution_keywords = ["contribution", "propose", "present", "introduce", "develop", "achieve"]
+        contribution_keywords = [
+            "contribution",
+            "propose",
+            "present",
+            "introduce",
+            "develop",
+            "achieve",
+        ]
 
         sentences = paper_content.metadata.abstract.split(". ")
 
@@ -452,7 +463,11 @@ class ReportGenerator:
 
                 break
 
-        return "\n".join(limitations[:3]) if limitations else "- 论文未明确提及局限性\n- 未来工作可以进一步改进和扩展"
+        return (
+            "\n".join(limitations[:3])
+            if limitations
+            else "- 论文未明确提及局限性\n- 未来工作可以进一步改进和扩展"
+        )
 
     def save_report(self, content: str, filename: str, output_dir: str = "outputs") -> str:
         """保存报告到文件"""
@@ -483,7 +498,9 @@ class ReportGenerator:
         metadata = paper_content.metadata
 
         key_contributions = [
-            contrib.strip("- ") for contrib in self._extract_contributions(paper_content).split("\n") if contrib.strip()
+            contrib.strip("- ")
+            for contrib in self._extract_contributions(paper_content).split("\n")
+            if contrib.strip()
         ]
 
         methodology_summary = self._extract_methodology_summary(paper_content)
@@ -533,7 +550,9 @@ class ReportGenerator:
 _report_generator_instance = ReportGenerator()
 
 
-def generate_report_tool(paper_content: PaperContent, user_background: str = "general") -> SynthesizerOutput:
+def generate_report_tool(
+    paper_content: PaperContent, user_background: str = "general"
+) -> SynthesizerOutput:
     """
 
     使用ScholarMind报告生成器生成综合报告。

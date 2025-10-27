@@ -3,21 +3,21 @@ ScholarMind Enhanced Pipeline
 智读ScholarMind增强工作流 - 统一架构和错误处理
 """
 
-from pathlib import Path
 import asyncio
 import time
-from typing import Any, Dict, List, Optional, Callable
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
 
-from agentscope.message import Msg
 from agentscope import pipeline
+from agentscope.message import Msg
 
-from ..agents.resource_retrieval_agent import ResourceRetrievalAgent
-from ..agents.methodology_agent import MethodologyAgent
 from ..agents.experiment_evaluator_agent import ExperimentEvaluatorAgent
 from ..agents.insight_generation_agent import InsightGenerationAgent
+from ..agents.methodology_agent import MethodologyAgent
+from ..agents.resource_retrieval_agent import ResourceRetrievalAgent
 from ..agents.synthesizer_agent import SynthesizerAgent
+from ..utils.error_handler import safe_execute, with_error_handling
 from ..utils.logger import pipeline_logger
-from ..utils.error_handler import with_error_handling, safe_execute
 from ..utils.message_utils import MessageUtils
 
 
@@ -42,7 +42,7 @@ class ScholarMindEnhancedPipeline:
             "last_run": None,
             "total_runs": 0,
             "successful_runs": 0,
-            "failed_runs": 0
+            "failed_runs": 0,
         }
 
         pipeline_logger.info("✅ 增强工作流初始化完成（5个智能体完整DAG）")
@@ -57,14 +57,14 @@ class ScholarMindEnhancedPipeline:
             # 预热所有智能体模型
             agents = [
                 self.resource_agent,
-                self.methodology_agent, 
+                self.methodology_agent,
                 self.experiment_agent,
                 self.insight_agent,
-                self.synthesizer_agent
+                self.synthesizer_agent,
             ]
 
             for agent in agents:
-                if hasattr(agent, '_ensure_model_initialized'):
+                if hasattr(agent, "_ensure_model_initialized"):
                     await agent._ensure_model_initialized()
                     pipeline_logger.info(f"✅ {agent.name} 模型初始化完成")
 
@@ -102,7 +102,7 @@ class ScholarMindEnhancedPipeline:
             Dict[str, Any]: 处理结果
         """
         start_time = time.time()
-        
+
         # 更新工作流状态
         self._pipeline_status["last_run"] = time.time()
         self._pipeline_status["total_runs"] += 1
@@ -117,7 +117,7 @@ class ScholarMindEnhancedPipeline:
                 return {
                     "success": False,
                     "error": f"输入验证失败: {'; '.join(validation_result['errors'])}",
-                    "stage": "validation"
+                    "stage": "validation",
                 }
 
             # 步骤1：资源检索
@@ -127,7 +127,7 @@ class ScholarMindEnhancedPipeline:
                 progress_callback=progress_callback,
                 progress_message="📖 步骤 1/4：正在检索和解析论文...",
                 paper_input=paper_input,
-                input_type=input_type
+                input_type=input_type,
             )
 
             if not resource_result["success"]:
@@ -140,7 +140,7 @@ class ScholarMindEnhancedPipeline:
                 progress_callback=progress_callback,
                 progress_message="🔬 步骤 2/4：并行分析论文方法论和实验评估...",
                 paper_content=resource_result["data"]["paper_content"],
-                output_language=output_language
+                output_language=output_language,
             )
 
             # 步骤3：洞察生成
@@ -150,9 +150,13 @@ class ScholarMindEnhancedPipeline:
                 progress_callback=progress_callback,
                 progress_message="💡 步骤 3/4：生成批判性洞察和研究建议...",
                 paper_content=resource_result["data"]["paper_content"],
-                methodology_analysis=methodology_result.get("data") if methodology_result["success"] else None,
-                experiment_evaluation=experiment_result.get("data") if experiment_result["success"] else None,
-                output_language=output_language
+                methodology_analysis=(
+                    methodology_result.get("data") if methodology_result["success"] else None
+                ),
+                experiment_evaluation=(
+                    experiment_result.get("data") if experiment_result["success"] else None
+                ),
+                output_language=output_language,
             )
 
             # 步骤4：综合报告生成
@@ -162,11 +166,15 @@ class ScholarMindEnhancedPipeline:
                 progress_callback=progress_callback,
                 progress_message="📝 步骤 4/4：综合生成个性化解读报告...",
                 resource_data=resource_result["data"],
-                methodology_analysis=methodology_result.get("data") if methodology_result["success"] else None,
-                experiment_evaluation=experiment_result.get("data") if experiment_result["success"] else None,
+                methodology_analysis=(
+                    methodology_result.get("data") if methodology_result["success"] else None
+                ),
+                experiment_evaluation=(
+                    experiment_result.get("data") if experiment_result["success"] else None
+                ),
                 insight_analysis=insight_result.get("data") if insight_result["success"] else None,
                 user_background=user_background,
-                output_language=output_language
+                output_language=output_language,
             )
 
             if not synthesizer_result["success"]:
@@ -200,7 +208,7 @@ class ScholarMindEnhancedPipeline:
                 user_background=user_background,
                 input_type=input_type,
                 output_format=output_format,
-                output_language=output_language
+                output_language=output_language,
             )
 
             pipeline_logger.info(f"✅ 论文处理完成，总耗时: {total_time:.2f}秒")
@@ -210,10 +218,21 @@ class ScholarMindEnhancedPipeline:
             self._pipeline_status["failed_runs"] += 1
             total_time = time.time() - start_time
             pipeline_logger.error(f"❌ 论文处理失败: {str(e)}")
-            return {"success": False, "error": str(e), "processing_time": total_time, "stage": "unknown"}
+            return {
+                "success": False,
+                "error": str(e),
+                "processing_time": total_time,
+                "stage": "unknown",
+            }
 
-    async def _execute_stage(self, stage_name: str, stage_func: Callable, progress_callback: Optional[Callable] = None, 
-                           progress_message: str = None, **kwargs) -> Dict[str, Any]:
+    async def _execute_stage(
+        self,
+        stage_name: str,
+        stage_func: Callable,
+        progress_callback: Optional[Callable] = None,
+        progress_message: str = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
         """执行单个处理阶段"""
         try:
             if progress_callback and progress_message:
@@ -222,18 +241,25 @@ class ScholarMindEnhancedPipeline:
                 pipeline_logger.info(f"执行阶段: {stage_name}")
 
             result = await stage_func(**kwargs)
-            
+
             if not result.get("success", False):
-                pipeline_logger.warning(f"⚠️ {stage_name} 阶段失败: {result.get('error', '未知错误')}")
-            
+                pipeline_logger.warning(
+                    f"⚠️ {stage_name} 阶段失败: {result.get('error', '未知错误')}"
+                )
+
             return result
 
         except Exception as e:
             pipeline_logger.error(f"❌ {stage_name} 阶段异常: {e}")
             return {"success": False, "error": str(e), "stage": stage_name}
 
-    async def _execute_parallel_stage(self, stage_name: str, progress_callback: Optional[Callable] = None,
-                                    progress_message: str = None, **kwargs) -> tuple:
+    async def _execute_parallel_stage(
+        self,
+        stage_name: str,
+        progress_callback: Optional[Callable] = None,
+        progress_message: str = None,
+        **kwargs,
+    ) -> tuple:
         """执行并行处理阶段"""
         try:
             if progress_callback and progress_message:
@@ -278,10 +304,12 @@ class ScholarMindEnhancedPipeline:
         return await self._execute_parallel_stage(
             stage_name="parallel_analysis",
             paper_content=paper_content,
-            output_language=output_language
+            output_language=output_language,
         )
 
-    def validate_inputs(self, paper_input: str, input_type: str, user_background: str) -> Dict[str, Any]:
+    def validate_inputs(
+        self, paper_input: str, input_type: str, user_background: str
+    ) -> Dict[str, Any]:
         """验证输入参数"""
         errors = []
 
@@ -304,69 +332,86 @@ class ScholarMindEnhancedPipeline:
             if not Path(paper_input).exists():
                 pipeline_logger.error_path("文件验证", paper_input, "文件不存在")
                 errors.append(f"文件不存在: {paper_input}")
-            elif not paper_input.lower().endswith(('.pdf', '.txt')):
+            elif not paper_input.lower().endswith((".pdf", ".txt")):
                 pipeline_logger.warning_path("文件格式验证", paper_input, "不支持的文件格式")
                 errors.append(f"不支持的文件格式: {paper_input}，支持的格式: .pdf, .txt")
 
         return {"valid": len(errors) == 0, "errors": errors}
 
-    async def _process_resource_retrieval(self, paper_input: str, input_type: str) -> Dict[str, Any]:
+    async def _process_resource_retrieval(
+        self, paper_input: str, input_type: str
+    ) -> Dict[str, Any]:
         """处理资源检索阶段"""
         try:
             input_data = {"paper_input": paper_input, "input_type": input_type}
             message = MessageUtils.create_user_message(input_data)
-            
+
             response = await self.resource_agent.reply(message)
             return MessageUtils.parse_agent_response(response)
 
         except Exception as e:
             return {"success": False, "error": f"资源检索失败: {str(e)}"}
 
-    async def _process_methodology_analysis(self, paper_content: Dict[str, Any], output_language: str) -> Dict[str, Any]:
+    async def _process_methodology_analysis(
+        self, paper_content: Dict[str, Any], output_language: str
+    ) -> Dict[str, Any]:
         """处理方法论分析阶段"""
         try:
             input_data = {"paper_content": paper_content, "output_language": output_language}
             message = MessageUtils.create_user_message(input_data)
-            
+
             response = await self.methodology_agent.reply(message)
             return MessageUtils.parse_agent_response(response)
 
         except Exception as e:
             return {"success": False, "error": f"方法论分析失败: {str(e)}"}
 
-    async def _process_experiment_evaluation(self, paper_content: Dict[str, Any], output_language: str) -> Dict[str, Any]:
+    async def _process_experiment_evaluation(
+        self, paper_content: Dict[str, Any], output_language: str
+    ) -> Dict[str, Any]:
         """处理实验评估阶段"""
         try:
             input_data = {"paper_content": paper_content, "output_language": output_language}
             message = MessageUtils.create_user_message(input_data)
-            
+
             response = await self.experiment_agent.reply(message)
             return MessageUtils.parse_agent_response(response)
 
         except Exception as e:
             return {"success": False, "error": f"实验评估失败: {str(e)}"}
 
-    async def _process_insight_generation(self, paper_content: Dict[str, Any], methodology_analysis: Optional[Dict[str, Any]], 
-                                        experiment_evaluation: Optional[Dict[str, Any]], output_language: str) -> Dict[str, Any]:
+    async def _process_insight_generation(
+        self,
+        paper_content: Dict[str, Any],
+        methodology_analysis: Optional[Dict[str, Any]],
+        experiment_evaluation: Optional[Dict[str, Any]],
+        output_language: str,
+    ) -> Dict[str, Any]:
         """处理洞察生成阶段"""
         try:
             input_data = {
                 "paper_content": paper_content,
                 "methodology_analysis": methodology_analysis,
                 "experiment_evaluation": experiment_evaluation,
-                "output_language": output_language
+                "output_language": output_language,
             }
             message = MessageUtils.create_user_message(input_data)
-            
+
             response = await self.insight_agent.reply(message)
             return MessageUtils.parse_agent_response(response)
 
         except Exception as e:
             return {"success": False, "error": f"洞察生成失败: {str(e)}"}
 
-    async def _process_synthesizer(self, resource_data: Dict[str, Any], methodology_analysis: Optional[Dict[str, Any]], 
-                                 experiment_evaluation: Optional[Dict[str, Any]], insight_analysis: Optional[Dict[str, Any]], 
-                                 user_background: str, output_language: str) -> Dict[str, Any]:
+    async def _process_synthesizer(
+        self,
+        resource_data: Dict[str, Any],
+        methodology_analysis: Optional[Dict[str, Any]],
+        experiment_evaluation: Optional[Dict[str, Any]],
+        insight_analysis: Optional[Dict[str, Any]],
+        user_background: str,
+        output_language: str,
+    ) -> Dict[str, Any]:
         """处理综合报告生成阶段"""
         try:
             input_data = {
@@ -375,17 +420,19 @@ class ScholarMindEnhancedPipeline:
                 "experiment_evaluation": experiment_evaluation,
                 "insight_analysis": insight_analysis,
                 "user_background": user_background,
-                "output_language": output_language
+                "output_language": output_language,
             }
             message = MessageUtils.create_user_message(input_data)
-            
+
             response = await self.synthesizer_agent.reply(message)
             return MessageUtils.parse_agent_response(response)
 
         except Exception as e:
             return {"success": False, "error": f"报告生成失败: {str(e)}"}
 
-    async def _save_report_safe(self, report_data: Dict[str, Any], output_format: str, output_language: str) -> Optional[str]:
+    async def _save_report_safe(
+        self, report_data: Dict[str, Any], output_format: str, output_language: str
+    ) -> Optional[str]:
         """安全的报告保存"""
         try:
             return self._save_report(report_data, output_format, output_language)
@@ -393,12 +440,14 @@ class ScholarMindEnhancedPipeline:
             pipeline_logger.error(f"❌ 报告保存失败: {e}")
             return None
 
-    def _save_report(self, report_data: Dict[str, Any], output_format: str, output_language: str) -> Optional[str]:
+    def _save_report(
+        self, report_data: Dict[str, Any], output_format: str, output_language: str
+    ) -> Optional[str]:
         """保存报告到文件"""
         try:
+            import json
             import os
             from datetime import datetime
-            import json
 
             # 创建输出目录
             output_dir = "outputs"
@@ -406,34 +455,38 @@ class ScholarMindEnhancedPipeline:
 
             # 生成文件名
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            title_safe = "".join(c for c in report_data.get("title", "report")[:50] if c.isalnum() or c in (' ', '-', '_')).rstrip()
+            title_safe = "".join(
+                c
+                for c in report_data.get("title", "report")[:50]
+                if c.isalnum() or c in (" ", "-", "_")
+            ).rstrip()
             filename = f"{title_safe}_{timestamp}.{output_format}"
             filepath = os.path.join(output_dir, filename)
 
             # 保存报告
             if output_format == "json":
-                with open(filepath, 'w', encoding='utf-8') as f:
+                with open(filepath, "w", encoding="utf-8") as f:
                     json.dump(report_data, f, ensure_ascii=False, indent=2)
             else:  # markdown
-                with open(filepath, 'w', encoding='utf-8') as f:
+                with open(filepath, "w", encoding="utf-8") as f:
                     f.write(f"# {report_data.get('title', '论文分析报告')}\n\n")
                     f.write(f"**生成时间**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
                     f.write(f"**语言**: {output_language}\n\n")
                     f.write("---\n\n")
-                    
-                    if report_data.get('summary'):
+
+                    if report_data.get("summary"):
                         f.write("## 摘要\n\n")
                         f.write(f"{report_data['summary']}\n\n")
-                    
-                    if report_data.get('key_contributions'):
+
+                    if report_data.get("key_contributions"):
                         f.write("## 主要贡献\n\n")
-                        for i, contribution in enumerate(report_data['key_contributions'], 1):
+                        for i, contribution in enumerate(report_data["key_contributions"], 1):
                             f.write(f"{i}. {contribution}\n")
                         f.write("\n")
-                    
-                    if report_data.get('insights'):
+
+                    if report_data.get("insights"):
                         f.write("## 关键洞察\n\n")
-                        for i, insight in enumerate(report_data['insights'], 1):
+                        for i, insight in enumerate(report_data["insights"], 1):
                             f.write(f"{i}. {insight}\n")
                         f.write("\n")
 
@@ -444,21 +497,36 @@ class ScholarMindEnhancedPipeline:
             pipeline_logger.error(f"❌ 报告保存失败: {e}")
             return None
 
-    def _build_final_result(self, total_time: float, resource_result: Dict[str, Any], methodology_result: Dict[str, Any],
-                          experiment_result: Dict[str, Any], insight_result: Dict[str, Any], synthesizer_result: Dict[str, Any],
-                          report_path: Optional[str], user_background: str, input_type: str, output_format: str, output_language: str) -> Dict[str, Any]:
+    def _build_final_result(
+        self,
+        total_time: float,
+        resource_result: Dict[str, Any],
+        methodology_result: Dict[str, Any],
+        experiment_result: Dict[str, Any],
+        insight_result: Dict[str, Any],
+        synthesizer_result: Dict[str, Any],
+        report_path: Optional[str],
+        user_background: str,
+        input_type: str,
+        output_format: str,
+        output_language: str,
+    ) -> Dict[str, Any]:
         """构建最终结果"""
-        
+
         # 安全地获取各阶段的处理时间
         def safe_get_processing_time(result, default=0):
             if isinstance(result, dict):
                 # 尝试多种可能的路径
                 if "processing_time" in result:
                     return result["processing_time"]
-                elif "data" in result and isinstance(result["data"], dict) and "processing_time" in result["data"]:
+                elif (
+                    "data" in result
+                    and isinstance(result["data"], dict)
+                    and "processing_time" in result["data"]
+                ):
                     return result["data"]["processing_time"]
             return default
-        
+
         return {
             "success": True,
             "message": "论文处理完成",
@@ -467,7 +535,10 @@ class ScholarMindEnhancedPipeline:
                 "resource_retrieval": {
                     "success": True,
                     "processing_time": safe_get_processing_time(resource_result),
-                    "paper_title": resource_result.get("data", {}).get("paper_content", {}).get("metadata", {}).get("title", "Unknown"),
+                    "paper_title": resource_result.get("data", {})
+                    .get("paper_content", {})
+                    .get("metadata", {})
+                    .get("title", "Unknown"),
                 },
                 "methodology_analysis": {
                     "success": methodology_result.get("success", False),
@@ -489,9 +560,15 @@ class ScholarMindEnhancedPipeline:
             },
             "outputs": {
                 "paper_content": resource_result.get("data", {}).get("paper_content"),
-                "methodology_analysis": methodology_result.get("data") if methodology_result.get("success") else None,
-                "experiment_evaluation": experiment_result.get("data") if experiment_result.get("success") else None,
-                "insight_analysis": insight_result.get("data") if insight_result.get("success") else None,
+                "methodology_analysis": (
+                    methodology_result.get("data") if methodology_result.get("success") else None
+                ),
+                "experiment_evaluation": (
+                    experiment_result.get("data") if experiment_result.get("success") else None
+                ),
+                "insight_analysis": (
+                    insight_result.get("data") if insight_result.get("success") else None
+                ),
                 "report": synthesizer_result.get("data"),
                 "report_path": report_path,
             },
@@ -512,18 +589,20 @@ class ScholarMindEnhancedPipeline:
                 self.methodology_agent.name,
                 self.experiment_agent.name,
                 self.insight_agent.name,
-                self.synthesizer_agent.name
+                self.synthesizer_agent.name,
             ],
             "pipeline_type": "Complete DAG (5 agents)",
             "workflow_stages": [
                 "resource_retrieval",
                 "parallel_analysis",
                 "insight_generation",
-                "synthesizer"
+                "synthesizer",
             ],
             "success_rate": (
-                self._pipeline_status["successful_runs"] / max(self._pipeline_status["total_runs"], 1) * 100
-            )
+                self._pipeline_status["successful_runs"]
+                / max(self._pipeline_status["total_runs"], 1)
+                * 100
+            ),
         }
 
 
