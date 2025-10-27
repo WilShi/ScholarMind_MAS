@@ -7,114 +7,61 @@ import json
 import time
 from typing import Dict, Any
 
-from agentscope.agent import AgentBase
 from agentscope.message import Msg
-from agentscope.model import OpenAIChatModel
 
-from config import get_model_config
+from ..agents.base_agent import ScholarMindAgentBase
 from ..utils.logger import agent_logger
 
 
-class MethodologyAgent(AgentBase):
+class MethodologyAgent(ScholarMindAgentBase):
     """方法论深度解析智能体"""
 
     def __init__(self, **kwargs):
-        # Initialize parent class first
-        super().__init__(**kwargs)
-        # Set agent name
-        self.name = "methodology_agent"
+        # Initialize base class with proper name parameter
+        super().__init__(
+            name="MethodologyAgent",
+            sys_prompt="You are an expert in analyzing academic papers' methodologies, algorithms, and technical innovations.",
+            **kwargs
+        )
 
-        # Get model configuration and initialize model wrapper
-        model_config = get_model_config()
-
-        # Initialize model wrapper using AgentScope's OpenAIChatModel
-        try:
-            self.model = OpenAIChatModel(
-                model_name=model_config.get("model_name"),
-                api_key=model_config.get("api_key"),
-                client_args=model_config.get("client_args", {}),
-                generate_kwargs={
-                    "temperature": model_config.get("temperature", 0.1),
-                    "max_tokens": model_config.get("max_tokens", 4000),
-                    "top_p": model_config.get("top_p", 0.9)
-                }
-            )
-            agent_logger.info(f"MethodologyAgent LLM模型已初始化: {model_config.get('model_name')}")
-        except Exception as e:
-            agent_logger.warning(f"Failed to initialize model for MethodologyAgent: {e}")
-            agent_logger.info("Will use fallback mode")
-            self.model = None
-
-        # Initialize system prompt
-        self.sys_prompt = "You are an expert in analyzing academic papers' methodologies, algorithms, and technical innovations."
-
-    async def reply(self, msg: Msg) -> Msg:
-        """
-        Process the input message and generate methodology analysis using LLM
-        """
+    async def _process_logic(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """处理方法论分析逻辑"""
         start_time = time.time()
-
+        
         try:
-            # 解析输入数据 - 支持字典或JSON字符串以保证兼容性
-            if isinstance(msg.content, dict):
-                input_data = msg.content
-            else:
-                input_data = json.loads(msg.content)
             paper_content = input_data.get("paper_content", {})
             output_language = input_data.get("output_language", "zh")
 
             metadata = paper_content.get("metadata", {})
             sections = paper_content.get("sections", [])
 
-            # Use LLM to generate deep methodology analysis
-            if self.model:
-                # Build context for LLM
-                paper_context = self._build_methodology_context(metadata, sections)
+            # Build context for LLM
+            paper_context = self._build_methodology_context(metadata, sections)
 
-                # Generate analysis using LLM
-                analysis = await self._generate_methodology_analysis(paper_context, output_language)
+            # Generate analysis using LLM
+            analysis = await self._generate_methodology_analysis(paper_context, output_language)
 
-                response_data = {
-                    "architecture_analysis": analysis.get("architecture_analysis", ""),
-                    "algorithm_flow": analysis.get("algorithm_flow", ""),
-                    "innovation_points": analysis.get("innovation_points", []),
-                    "related_work_comparison": analysis.get("related_work_comparison", ""),
-                    "technical_details": analysis.get("technical_details", ""),
-                    "complexity_analysis": analysis.get("complexity_analysis"),
-                    "mathematical_formulation": analysis.get("mathematical_formulation"),
-                    "processing_time": time.time() - start_time,
-                    "success": True,
-                    "error_message": None,
-                }
-            else:
-                # Fallback: Basic extraction from paper content
-                response_data = self._generate_fallback_analysis(metadata, sections)
-                response_data["processing_time"] = time.time() - start_time
-                response_data["success"] = True
-                response_data["error_message"] = None
-
-            response_content = {
-                "status": "success",
-                "data": response_data,
-                "message": "Methodology analysis generated successfully",
+            response_data = {
+                "architecture_analysis": analysis.get("architecture_analysis", ""),
+                "algorithm_flow": analysis.get("algorithm_flow", ""),
+                "innovation_points": analysis.get("innovation_points", []),
+                "related_work_comparison": analysis.get("related_work_comparison", ""),
+                "technical_details": analysis.get("technical_details", ""),
+                "complexity_analysis": analysis.get("complexity_analysis"),
+                "mathematical_formulation": analysis.get("mathematical_formulation"),
+                "processing_time": time.time() - start_time,
+                "success": True,
+                "error_message": None,
             }
-
-            # Create response message - 直接传递字典
-            response_msg = Msg(name=self.name, content=response_content, role="assistant")
-
-            return response_msg
+            
+            return response_data
+            
         except Exception as e:
-            error_response = {
-                "status": "error",
-                "error": str(e),
-                "data": {
-                    "success": False,
-                    "error_message": str(e),
-                    "processing_time": time.time() - start_time,
-                }
+            return {
+                "success": False,
+                "error_message": str(e),
+                "processing_time": time.time() - start_time,
             }
-
-            return Msg(name=self.name, content=error_response, role="assistant")
 
     def _build_methodology_context(self, metadata: dict, sections: list) -> str:
         """Build context string for LLM from paper methodology sections"""
@@ -184,61 +131,39 @@ Please provide a comprehensive methodology analysis in JSON format with the foll
 **Important**: Respond ONLY with valid JSON, no additional text. Please write all content in {language_instruction}."""
 
         try:
-            # Call LLM - OpenAIChatModel expects messages list
+            # Call LLM using base class safe method
             messages = [
                 {"role": "system", "content": self.sys_prompt},
                 {"role": "user", "content": prompt}
             ]
 
-            agent_logger.debug("MethodologyAgent正在调用LLM分析方法论...")
+            agent_logger.info("MethodologyAgent正在调用LLM分析方法论...")
 
-            # Await the async model call
-            response = await self.model(messages)
+            # Use base class safe model call
+            response = await self._safe_model_call(messages)
+            
+            if response.get("success", False):
+                # Parse JSON response
+                response_text = response.get("content", "")
+                
+                # Try to extract JSON from response
+                import re
+                json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response_text, re.DOTALL)
+                if json_match:
+                    response_text = json_match.group(1)
 
-            # Handle async generator (streaming response)
-            response_text = ""
-            if hasattr(response, '__aiter__'):
-                # It's an async generator - collect all chunks
-                last_chunk_text = ""
-                async for chunk in response:
-                    # ChatResponse object has a 'content' field which is a list of dicts
-                    if hasattr(chunk, 'content'):
-                        content = chunk.content
-                        if isinstance(content, list):
-                            current_text = ""
-                            for item in content:
-                                if isinstance(item, dict) and 'text' in item:
-                                    current_text += item['text']
-                            last_chunk_text = current_text  # Keep only the last chunk
-                        elif isinstance(content, str):
-                            last_chunk_text = content
-                    elif isinstance(chunk, dict):
-                        last_chunk_text = chunk.get('text', chunk.get('content', ''))
-                    elif isinstance(chunk, str):
-                        last_chunk_text = chunk
-
-                # Use the last chunk which contains the complete response
-                response_text = last_chunk_text
-            elif hasattr(response, 'text'):
-                response_text = response.text
-            elif isinstance(response, dict):
-                response_text = response.get('text', response.get('content', str(response)))
-            elif isinstance(response, str):
-                response_text = response
+                analysis = json.loads(response_text)
+                agent_logger.info("MethodologyAgent分析成功生成")
+                return analysis
             else:
-                response_text = str(response)
-
-            # Try to extract JSON from response
-            # Sometimes LLM adds markdown code blocks
-            import re
-            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response_text, re.DOTALL)
-            if json_match:
-                response_text = json_match.group(1)
-
-            # Parse JSON response
-            analysis = json.loads(response_text)
-            agent_logger.info("MethodologyAgent分析成功生成")
-            return analysis
+                # Return structured fallback
+                return {
+                    "architecture_analysis": "Model call failed",
+                    "algorithm_flow": "Model call failed",
+                    "innovation_points": ["Model call failed"],
+                    "related_work_comparison": "Model call failed",
+                    "technical_details": "Model call failed",
+                }
 
         except json.JSONDecodeError as e:
             agent_logger.warning(f"Failed to parse JSON from LLM response: {e}")
@@ -252,7 +177,6 @@ Please provide a comprehensive methodology analysis in JSON format with the foll
             }
         except Exception as e:
             agent_logger.error(f"LLM generation failed: {e}")
-            agent_logger.debug(f"Error type: {type(e).__name__}")
             # Return structured fallback
             return {
                 "architecture_analysis": "Failed to generate LLM-based analysis.",

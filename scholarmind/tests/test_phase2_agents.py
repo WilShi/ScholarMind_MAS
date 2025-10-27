@@ -19,7 +19,7 @@ class TestMethodologyAgent:
         """测试方法论智能体初始化"""
         agent = MethodologyAgent()
         assert agent is not None
-        assert agent.name == "methodology_agent"
+        assert agent.name == "MethodologyAgent"
         assert hasattr(agent, 'model')
 
     @pytest.mark.asyncio
@@ -57,7 +57,8 @@ class TestMethodologyAgent:
 
         # 调用agent
         response = await agent.reply(msg)
-        response_data = json.loads(response.content)
+        # response.content 已经是字典，不需要 json.loads
+        response_data = response.content if isinstance(response.content, dict) else json.loads(response.content)
 
         # 验证响应结构
         assert response_data["status"] in ["success", "error"]
@@ -100,7 +101,7 @@ class TestExperimentEvaluatorAgent:
         """测试实验评估智能体初始化"""
         agent = ExperimentEvaluatorAgent()
         assert agent is not None
-        assert agent.name == "experiment_evaluator_agent"
+        assert agent.name == "ExperimentEvaluatorAgent"
         assert hasattr(agent, 'model')
 
     @pytest.mark.asyncio
@@ -138,7 +139,8 @@ class TestExperimentEvaluatorAgent:
 
         # 调用agent
         response = await agent.reply(msg)
-        response_data = json.loads(response.content)
+        # response.content 已经是字典，不需要 json.loads
+        response_data = response.content if isinstance(response.content, dict) else json.loads(response.content)
 
         # 验证响应结构
         assert response_data["status"] in ["success", "error"]
@@ -224,8 +226,9 @@ class TestParallelProcessing:
         assert methodology_response is not None
         assert experiment_response is not None
 
-        methodology_data = json.loads(methodology_response.content)
-        experiment_data = json.loads(experiment_response.content)
+        # response.content 已经是字典，不需要 json.loads
+        methodology_data = methodology_response.content if isinstance(methodology_response.content, dict) else json.loads(methodology_response.content)
+        experiment_data = experiment_response.content if isinstance(experiment_response.content, dict) else json.loads(experiment_response.content)
 
         assert methodology_data["status"] in ["success", "error"]
         assert experiment_data["status"] in ["success", "error"]

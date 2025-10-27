@@ -5,12 +5,17 @@
         "model_name": "Qwen/Qwen3-Next-80B-A3B-Instruct",
         "api_key": "${MODELSCOPE_API_KEY}",
         "client_args": {
-            "base_url": "https://api-inference.modelscope.cn/v1"
+            "base_url": "https://api-inference.modelscope.cn/v1",
+            "timeout": 60
         },
         "temperature": 0.1,
         "max_tokens": 4000,
         "top_p": 0.9,
-        "timeout": 60
+        "availability_test": {
+            "enabled": true,
+            "test_message": "Hello",
+            "expected_response_length_min": 1
+        }
     },
     {
         "config_name": "qwen-235b",
@@ -18,11 +23,70 @@
         "model_name": "Qwen/Qwen3-235B-A22B-Instruct-2507",
         "api_key": "${MODELSCOPE_API_KEY}",
         "client_args": {
-            "base_url": "https://api-inference.modelscope.cn/v1"
+            "base_url": "https://api-inference.modelscope.cn/v1",
+            "timeout": 60
         },
         "temperature": 0.1,
         "max_tokens": 4000,
         "top_p": 0.9,
-        "timeout": 60
+        "availability_test": {
+            "enabled": true,
+            "test_message": "Hello",
+            "expected_response_length_min": 1
+        }
+    },
+    {
+        "config_name": "openai-gpt-4",
+        "model_type": "openai_chat",
+        "model_name": "gpt-4",
+        "api_key": "${OPENAI_API_KEY}",
+        "client_args": {
+            "base_url": "https://api.openai.com/v1",
+            "timeout": 30
+        },
+        "temperature": 0.1,
+        "max_tokens": 4000,
+        "top_p": 0.9,
+        "availability_test": {
+            "enabled": true,
+            "test_message": "Say 'Hello' in one word",
+            "expected_response_length_min": 1
+        }
+    },
+    {
+        "config_name": "custom-service-1",
+        "model_type": "openai_chat",
+        "model_name": "${CUSTOM_MODEL_NAME_1}",
+        "api_key": "${CUSTOM_API_KEY_1}",
+        "client_args": {
+            "base_url": "${CUSTOM_BASE_URL_1}",
+            "timeout": 30
+        },
+        "temperature": 0.1,
+        "max_tokens": 4000,
+        "top_p": 0.9,
+        "availability_test": {
+            "enabled": true,
+            "test_message": "Test",
+            "expected_response_length_min": 1
+        }
+    },
+    {
+        "config_name": "custom-service-2",
+        "model_type": "openai_chat",
+        "model_name": "${CUSTOM_MODEL_NAME_2}",
+        "api_key": "${CUSTOM_API_KEY_2}",
+        "client_args": {
+            "base_url": "${CUSTOM_BASE_URL_2}",
+            "timeout": 30
+        },
+        "temperature": 0.1,
+        "max_tokens": 4000,
+        "top_p": 0.9,
+        "availability_test": {
+            "enabled": true,
+            "test_message": "Test",
+            "expected_response_length_min": 1
+        }
     }
 ]

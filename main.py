@@ -1,30 +1,22 @@
 """
 ScholarMind Main Entry Point
-智读ScholarMind主程序入口
+智读ScholarMind主程序入口 - 使用增强配置管理
 """
 
 import sys
 import argparse
 import textwrap
 from pathlib import Path
-import agentscope
-import os
 import asyncio
-
+import agentscope
 
 # 添加项目根目录到Python路径，确保可以正确导入模块
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-# 初始化 AgentScope（无需加载model_configs，Agent会直接使用OpenAIChatModel）
-agentscope.init(
-    project="ScholarMind",
-    name="scholarmind-run",
-    studio_url="http://localhost:3000"
-)
-
 from scholarmind.workflows.scholarmind_pipeline import create_pipeline
 from scholarmind.agents.interactive_agent import InteractiveScholarAgent
 from scholarmind.utils.logger import setup_logger
+from scholarmind.utils.model_config_manager import EnhancedModelConfigManager
 from config import setup_directories, validate_config
 
 # Create CLI logger for user-facing output
@@ -79,10 +71,17 @@ def parse_arguments():
     return parser.parse_args()
 
 def main():
-    """主函数：初始化并运行ScholarMind工作流"""
+    """主函数：初始化并运行ScholarMind工作流（使用增强配置管理）"""
     # 预备工作：设置目录和解析参数
     setup_directories()
     args = parse_arguments()
+
+    # 初始化AgentScope
+    agentscope.init(
+        project="ScholarMind-Runtime",
+        name="scholarmind-runtime",
+        studio_url="http://localhost:3000"
+    )
 
     # 步骤1: 验证环境配置
     cli_logger.info("正在验证环境配置...")
@@ -91,7 +90,34 @@ def main():
         return
     cli_logger.info("✅ 环境配置验证通过。")
 
-    # 步骤2: 初始化工作流
+    # 步骤2: 初始化增强配置管理器
+    cli_logger.info("\n🔧 正在初始化增强配置管理器...")
+    config_manager = EnhancedModelConfigManager()
+    
+    # 测试模型可用性
+    cli_logger.info("🔍 正在测试模型可用性...")
+    try:
+        # 这里可以异步测试模型，但在main函数中我们保持同步
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        async def test_models():
+            model_status = await config_manager.check_all_models_availability()
+            available_models = [name for name, status in model_status.items() if status.get('available', False)]
+            if available_models:
+                cli_logger.info(f"✅ 检测到 {len(available_models)} 个可用模型: {', '.join(available_models)}")
+            else:
+                cli_logger.warning("⚠️ 未检测到可用模型，请检查配置")
+            return model_status
+        
+        model_status = loop.run_until_complete(test_models())
+        loop.close()
+        
+    except Exception as e:
+        cli_logger.warning(f"⚠️ 模型可用性测试失败: {e}，继续使用默认配置")
+
+    # 步骤3: 初始化工作流
     cli_logger.info("\n🚀 正在初始化 ScholarMind 工作流...")
     pipeline = create_pipeline()
     cli_logger.info("✅ 工作流已准备就绪。")
@@ -104,7 +130,7 @@ def main():
         asyncio.run(interactive_agent.run_interactive_session(pipeline))
         return
 
-    # 步骤3: 验证输入参数
+    # 步骤4: 验证输入参数
     cli_logger.info("\n🔍 正在验证输入参数...")
     validation_result = pipeline.validate_inputs(args.input, args.type, args.background)
     if not validation_result["valid"]:
@@ -114,7 +140,7 @@ def main():
         return
     cli_logger.info("✅ 输入参数验证通过。")
 
-    # 步骤4: 执行论文处理
+    # 步骤5: 执行论文处理
     cli_logger.info(f"\n🔬 开始处理论文: {args.input}")
     result = asyncio.run(pipeline.process_paper(
         paper_input=args.input,
@@ -125,7 +151,7 @@ def main():
         output_language=args.language
     ))
 
-    # 步骤5: 显示结果
+    # 步骤6: 显示结果
     if result and result.get("success"):
         # 多语言标签
         labels = {

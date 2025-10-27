@@ -134,9 +134,11 @@ cython_debug/
 # ScholarMind specific
 outputs/
 .cache/
+logs/
 *.pdf
 !templates/*.pdf
 scholarmind.log
+*.log
 .DS_Store
 
 # API Keys and secrets

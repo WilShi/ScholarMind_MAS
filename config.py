@@ -35,51 +35,52 @@ class AcademicAPIConfig:
 
 class ProcessingConfig:
     """处理配置"""
-    
-    # PDF解析配置
-    MAX_PDF_SIZE = 50 * 1024 * 1024  # 50MB
-    PDF_PARSE_TIMEOUT = 30  # seconds
-    
-    # 文本处理配置
-    MAX_TEXT_LENGTH = 100000  # characters
-    CHUNK_SIZE = 5000  # characters for chunking
-    
-    # 并行处理配置
-    MAX_WORKERS = 4
-    PARALLEL_TIMEOUT = 300  # seconds
+
+    # PDF解析配置 - 支持环境变量覆盖
+    MAX_PDF_SIZE = int(os.getenv("MAX_PDF_SIZE", str(50 * 1024 * 1024)))  # 默认50MB
+    PDF_PARSE_TIMEOUT = int(os.getenv("PDF_PARSE_TIMEOUT", "30"))  # 默认30秒
+
+    # 文本处理配置 - 支持环境变量覆盖
+    MAX_TEXT_LENGTH = int(os.getenv("MAX_TEXT_LENGTH", "100000"))  # 默认100000字符
+    CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "5000"))  # 默认5000字符
+
+    # 并行处理配置 - 支持环境变量覆盖
+    MAX_WORKERS = int(os.getenv("MAX_WORKERS", "4"))  # 默认4个worker
+    PARALLEL_TIMEOUT = int(os.getenv("PARALLEL_TIMEOUT", "300"))  # 默认300秒
 
 
 class OutputConfig:
     """输出配置"""
 
-    # 报告生成配置
-    REPORT_TEMPLATE_DIR = "prompts/templates"
-    OUTPUT_DIR = "outputs"
+    # 报告生成配置 - 支持环境变量覆盖
+    REPORT_TEMPLATE_DIR = os.getenv("REPORT_TEMPLATE_DIR", "prompts/templates")
+    OUTPUT_DIR = os.getenv("OUTPUT_DIR", "outputs")
 
     # 报告格式配置
     REPORT_FORMATS = ["markdown", "html", "pdf"]
-    DEFAULT_REPORT_FORMAT = "markdown"
+    DEFAULT_REPORT_FORMAT = os.getenv("DEFAULT_REPORT_FORMAT", "markdown")
 
     # 输出语言配置
     OUTPUT_LANGUAGES = ["zh", "en"]  # zh=中文, en=英文
-    DEFAULT_OUTPUT_LANGUAGE = "zh"   # 默认中文
+    DEFAULT_OUTPUT_LANGUAGE = os.getenv("DEFAULT_OUTPUT_LANGUAGE", "zh")  # 默认中文
 
 
 class LoggingConfig:
     """日志配置"""
-    
+
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-    LOG_FILE = "scholarmind.log"
-    LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    LOG_DIR = os.getenv("LOG_DIR", "logs")  # 日志目录
+    LOG_FILE = os.getenv("LOG_FILE", "logs/scholarmind.log")  # 主日志文件
+    LOG_FORMAT = os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 
 class CacheConfig:
     """缓存配置"""
-    
-    ENABLE_CACHE = True
-    CACHE_TTL = 3600  # seconds (1 hour)
-    CACHE_DIR = ".cache"
-    MAX_CACHE_SIZE = 1000  # MB
+
+    ENABLE_CACHE = os.getenv("ENABLE_CACHE", "true").lower() == "true"  # 支持环境变量
+    CACHE_TTL = int(os.getenv("CACHE_TTL", "3600"))  # 默认1小时
+    CACHE_DIR = os.getenv("CACHE_DIR", ".cache")
+    MAX_CACHE_SIZE = int(os.getenv("MAX_CACHE_SIZE", "1000"))  # 默认1000MB
 
 
 def get_model_config(model_name: Optional[str] = None) -> Dict[str, Any]:
@@ -148,15 +149,15 @@ def validate_config() -> bool:
     return True
 
 
-# 创建必要的目录
 def setup_directories():
     """创建必要的目录"""
     directories = [
         OutputConfig.OUTPUT_DIR,
         CacheConfig.CACHE_DIR,
-        OutputConfig.REPORT_TEMPLATE_DIR
+        OutputConfig.REPORT_TEMPLATE_DIR,
+        LoggingConfig.LOG_DIR  # 添加日志目录
     ]
-    
+
     for directory in directories:
         os.makedirs(directory, exist_ok=True)
 

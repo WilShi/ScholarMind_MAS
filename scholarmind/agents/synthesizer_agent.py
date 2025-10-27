@@ -1,57 +1,36 @@
 import json
 import time
+from typing import Dict, Any
 
-from agentscope.agent import AgentBase
 from agentscope.message import Msg
-from agentscope.model import OpenAIChatModel
 
-from config import get_model_config
+from ..agents.base_agent import ScholarMindAgentBase
 from ..utils.logger import agent_logger
 
 
-class SynthesizerAgent(AgentBase):
+class SynthesizerAgent(ScholarMindAgentBase):
+    """综合报告智能体"""
     def __init__(self, **kwargs):
-        # Initialize parent class first
-        super().__init__(**kwargs)
-        # Set agent name
-        self.name = "synthesizer_agent"
-
-        # Get model configuration and initialize model wrapper
-        model_config = get_model_config()
-
-        # Initialize model wrapper using AgentScope's OpenAIChatModel
-        try:
-            self.model = OpenAIChatModel(
-                model_name=model_config.get("model_name"),
-                api_key=model_config.get("api_key"),
-                client_args=model_config.get("client_args", {}),
-                generate_kwargs={
-                    "temperature": model_config.get("temperature", 0.1),
-                    "max_tokens": model_config.get("max_tokens", 4000),
-                    "top_p": model_config.get("top_p", 0.9)
-                }
-            )
-            agent_logger.info(f"LLM模型已初始化: {model_config.get('model_name')}")
-        except Exception as e:
-            agent_logger.warning(f"Failed to initialize model: {e}")
-            agent_logger.info("Will use fallback mode extracting from paper content")
-            self.model = None
-
-        # Initialize any required attributes
-        self.sys_prompt = "You are a helpful assistant that generates academic paper summary reports."
+        # Initialize base class with proper name parameter
+        super().__init__(
+            name="SynthesizerAgent",
+            sys_prompt="You are an expert in synthesizing comprehensive reports from academic paper analysis.",
+            **kwargs
+        )
 
     async def reply(self, msg: Msg) -> Msg:
         """
-        Process the input message and generate a report using LLM
+        使用基类的标准回复方法
+        """
+        return await super().reply(msg)
+
+    async def _process_logic(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        处理综合报告生成逻辑（符合基类标准）
         """
         start_time = time.time()
-
+        
         try:
-            # 解析输入数据 - 支持字典或JSON字符串以保证兼容性
-            if isinstance(msg.content, dict):
-                input_data = msg.content
-            else:
-                input_data = json.loads(msg.content)
             paper_content = input_data.get("paper_content", {})
             user_background = input_data.get("user_background", "intermediate")
             output_language = input_data.get("output_language", "zh")
@@ -59,7 +38,7 @@ class SynthesizerAgent(AgentBase):
             # Get analysis from all agents
             methodology_analysis = input_data.get("methodology_analysis")
             experiment_evaluation = input_data.get("experiment_evaluation")
-            insight_analysis = input_data.get("insight_analysis")  # NEW: Phase 3 addition
+            insight_analysis = input_data.get("insight_analysis")
 
             metadata = paper_content.get("metadata", {})
             sections = paper_content.get("sections", [])
@@ -95,20 +74,14 @@ class SynthesizerAgent(AgentBase):
                 response_data["processing_time"] = time.time() - start_time
                 response_data["success"] = True
 
-            response_content = {
-                "status": "success",
-                "data": response_data,
-                "message": "Report generated successfully",
-            }
-
-            # Create response message - 直接传递字典
-            response_msg = Msg(name=self.name, content=response_content, role="assistant")
-
-            return response_msg
+            return response_data
+            
         except Exception as e:
-            error_response = {"status": "error", "error": str(e), "data": {"success": False, "error_message": str(e)}}
-
-            return Msg(name=self.name, content=error_response, role="assistant")
+            return {
+                "success": False,
+                "error_message": str(e),
+                "processing_time": time.time() - start_time if 'start_time' in locals() else 0,
+            }
 
     def _build_paper_context(
         self,
@@ -235,7 +208,7 @@ Please provide a comprehensive analysis in JSON format with the following struct
                 {"role": "user", "content": prompt}
             ]
 
-            agent_logger.debug("正在调用LLM分析论文...")
+            agent_logger.info("正在调用LLM分析论文...")
 
             # Await the async model call
             response = await self.model(messages)
@@ -299,7 +272,7 @@ Please provide a comprehensive analysis in JSON format with the following struct
             }
         except Exception as e:
             agent_logger.error(f"LLM generation failed: {e}")
-            agent_logger.debug(f"Error type: {type(e).__name__}")
+            agent_logger.error(f"Error type: {type(e).__name__}")
             # Return structured fallback
             return {
                 "summary": "Failed to generate LLM-based summary.",

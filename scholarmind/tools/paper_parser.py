@@ -17,6 +17,7 @@ from docx import Document
 
 from ..models.structured_outputs import PaperContent, PaperMetadata, PaperSection
 from ..utils.logger import tool_logger
+from ..utils.path_utils import PathUtils
 
 
 class PaperParser:
@@ -59,21 +60,27 @@ class PaperParser:
 
     def parse_file(self, file_path: str) -> PaperContent:
         """解析文件"""
-        p_file_path = Path(file_path)
-        if not p_file_path.exists():
-            raise FileNotFoundError(f"File not found: {p_file_path}")
+        try:
+            # 使用Path对象处理中文路径
+            p_file_path = Path(file_path)
+            if not p_file_path.exists():
+                raise FileNotFoundError(f"File not found: {p_file_path}")
 
-        file_ext = p_file_path.suffix.lower()
-        if file_ext not in self.supported_formats:
-            raise ValueError(f"Unsupported file format: {file_ext}")
+            file_ext = p_file_path.suffix.lower()
+            if file_ext not in self.supported_formats:
+                raise ValueError(f"Unsupported file format: {file_ext}")
 
-        if file_ext == ".pdf":
-            return self.parse_pdf(p_file_path)
-        elif file_ext == ".docx":
-            return self.parse_docx(p_file_path)
-        elif file_ext == ".txt":
-            return self.parse_txt(p_file_path)
-        return None  # Should not happen
+            if file_ext == ".pdf":
+                return self.parse_pdf(p_file_path)
+            elif file_ext == ".docx":
+                return self.parse_docx(p_file_path)
+            elif file_ext == ".txt":
+                return self.parse_txt(p_file_path)
+            return None  # Should not happen
+        except Exception as e:
+            # 如果Path处理失败，回退到字符串处理
+            tool_logger.warning_path("Path处理失败", file_path, f"回退到字符串处理: {e}")
+            return self._parse_file_fallback(file_path)
 
     def parse_pdf(self, file_path: Path) -> PaperContent:
         """解析PDF文件"""
@@ -88,10 +95,10 @@ class PaperParser:
                     if page_text:
                         text_content += page_text + "\n"
         except Exception as e:
-            tool_logger.warning(f"pdfplumber failed, trying pypdf: {e}")
+            tool_logger.warning_path("PDF解析", file_path, f"pdfplumber失败，尝试pypdf: {e}")
             # 备用方案：使用pypdf
             try:
-                with open(file_path, "rb") as file:
+                with PathUtils.safe_open_file(file_path, 'rb') as file:
                     pdf_reader = PdfReader(file)
                     for page in pdf_reader.pages:
                         text_content += page.extract_text() + "\n"
@@ -111,6 +118,36 @@ class PaperParser:
             figures=self._extract_figures_info(text_content),
             tables=self._extract_tables_info(text_content),
         )
+    
+    def _parse_file_fallback(self, file_path: str) -> PaperContent:
+        """回退的文件解析方法，处理编码问题"""
+        try:
+            # 尝试多种编码打开文件
+            for encoding in ['utf-8', 'gbk', 'gb2312', 'latin1']:
+                try:
+                    with open(file_path, 'r', encoding=encoding) as file:
+                        text_content = file.read()
+                        
+                    # 提取元数据
+                    metadata = self._extract_metadata_from_text(text_content, Path(file_path).name)
+                    
+                    # 解析章节
+                    sections = self._parse_sections(text_content)
+                    
+                    return PaperContent(
+                        metadata=metadata,
+                        sections=sections,
+                        full_text=text_content,
+                        figures=[],
+                        tables=[]
+                    )
+                except UnicodeDecodeError:
+                    continue
+            
+            raise RuntimeError(f"无法读取文件: {file_path}（尝试了多种编码）")
+            
+        except Exception as e:
+            raise RuntimeError(f"文件解析失败: {str(e)}")
 
     def parse_docx(self, file_path: Path) -> PaperContent:
         """解析DOCX文件"""
@@ -133,8 +170,12 @@ class PaperParser:
 
     def parse_txt(self, file_path: Path) -> PaperContent:
         """解析TXT文件"""
-        with open(file_path, "r", encoding="utf-8") as file:
-            text_content = file.read()
+        try:
+            with PathUtils.safe_open_file(file_path, 'r') as file:
+                text_content = file.read()
+        except Exception as e:
+            tool_logger.error_path("TXT文件读取", file_path, f"读取失败: {e}")
+            raise RuntimeError(f"Failed to parse TXT file: {str(e)}")
 
         metadata = self._extract_metadata_from_text(text_content, file_path.name)
         sections = self._parse_sections(text_content)
@@ -143,8 +184,8 @@ class PaperParser:
             metadata=metadata,
             sections=sections,
             full_text=text_content,
-            figures=self._extract_figures_info(text_content),
-            tables=self._extract_tables_info(text_content),
+            figures=[],
+            tables=[]
         )
 
     def _parse_url(self, url: str) -> PaperContent:

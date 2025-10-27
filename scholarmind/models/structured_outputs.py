@@ -3,7 +3,8 @@ ScholarMind Structured Output Models
 智读ScholarMind结构化输出模型
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Generic, List, Optional, TypeVar
+from enum import Enum
 
 from pydantic import BaseModel, Field
 
@@ -118,3 +119,147 @@ class SynthesizerOutput(BaseModel):
     processing_time: float = Field(description="处理时间（秒）")
     success: bool = Field(description="处理是否成功")
     error_message: Optional[str] = Field(description="错误信息")
+
+
+# ==================== 统一 API 响应模型 ====================
+
+class ResponseStatus(str, Enum):
+    """响应状态枚举"""
+    SUCCESS = "success"
+    ERROR = "error"
+    PARTIAL = "partial"  # 部分成功
+
+
+DataT = TypeVar("DataT")
+
+
+class APIResponse(BaseModel, Generic[DataT]):
+    """
+    统一的 API 响应模型
+
+    使用泛型支持不同类型的数据
+
+    示例:
+        >>> response = APIResponse[MethodologyAnalysis](
+        ...     status=ResponseStatus.SUCCESS,
+        ...     data=methodology_result,
+        ...     message="方法论分析完成"
+        ... )
+    """
+    status: ResponseStatus = Field(description="响应状态")
+    data: Optional[DataT] = Field(default=None, description="响应数据")
+    message: Optional[str] = Field(default=None, description="响应消息")
+    error: Optional[str] = Field(default=None, description="错误信息")
+    error_code: Optional[str] = Field(default=None, description="错误代码")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="额外元数据")
+
+    class Config:
+        use_enum_values = True
+
+
+class ErrorDetail(BaseModel):
+    """错误详情模型"""
+    code: str = Field(description="错误代码")
+    message: str = Field(description="错误消息")
+    field: Optional[str] = Field(default=None, description="相关字段")
+    details: Optional[Dict[str, Any]] = Field(default=None, description="额外详情")
+
+
+class PaginationMetadata(BaseModel):
+    """分页元数据"""
+    page: int = Field(description="当前页码", ge=1)
+    page_size: int = Field(description="每页大小", ge=1, le=100)
+    total_items: int = Field(description="总项目数", ge=0)
+    total_pages: int = Field(description="总页数", ge=0)
+
+
+class PaginatedResponse(BaseModel, Generic[DataT]):
+    """分页响应模型"""
+    status: ResponseStatus = Field(description="响应状态")
+    data: List[DataT] = Field(default_factory=list, description="数据列表")
+    pagination: PaginationMetadata = Field(description="分页信息")
+    message: Optional[str] = Field(default=None, description="响应消息")
+
+
+# ==================== 便捷构造函数 ====================
+
+def success_response(
+    data: Any = None,
+    message: str = "操作成功",
+    metadata: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    """
+    创建成功响应
+
+    Args:
+        data: 响应数据
+        message: 成功消息
+        metadata: 额外元数据
+
+    Returns:
+        标准化的成功响应字典
+    """
+    return {
+        "status": ResponseStatus.SUCCESS,
+        "data": data,
+        "message": message,
+        "error": None,
+        "error_code": None,
+        "metadata": metadata or {}
+    }
+
+
+def error_response(
+    error: str,
+    error_code: Optional[str] = None,
+    message: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    """
+    创建错误响应
+
+    Args:
+        error: 错误信息
+        error_code: 错误代码
+        message: 错误消息
+        metadata: 额外元数据
+
+    Returns:
+        标准化的错误响应字典
+    """
+    return {
+        "status": ResponseStatus.ERROR,
+        "data": None,
+        "message": message or "操作失败",
+        "error": error,
+        "error_code": error_code,
+        "metadata": metadata or {}
+    }
+
+
+def partial_response(
+    data: Any = None,
+    message: str = "部分成功",
+    error: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    """
+    创建部分成功响应
+
+    Args:
+        data: 响应数据（可能不完整）
+        message: 响应消息
+        error: 错误信息（说明哪些部分失败）
+        metadata: 额外元数据
+
+    Returns:
+        标准化的部分成功响应字典
+    """
+    return {
+        "status": ResponseStatus.PARTIAL,
+        "data": data,
+        "message": message,
+        "error": error,
+        "error_code": None,
+        "metadata": metadata or {}
+    }

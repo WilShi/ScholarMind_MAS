@@ -1,0 +1,46 @@
+# Generated requirements with locked versions
+# To update: pip install -r requirements.txt && pip freeze > requirements-lock.txt
+
+# AgentScope Framework
+agentscope==1.0.0
+
+# Document Processing
+pypdf==5.1.0
+pdfplumber==0.11.4
+python-docx==1.1.2
+
+# Academic API Clients
+requests==2.32.3
+arxiv==2.1.3
+scholarly==1.7.11
+
+# Data Processing
+pydantic==2.9.2
+pydantic-settings==2.6.1
+pydantic-core==2.23.4
+numpy==1.26.4
+pandas==2.2.3
+
+# Testing
+pytest==8.4.2
+pytest-cov==6.0.0
+pytest-asyncio==1.2.0
+
+# Utilities
+python-dotenv==1.0.1
+tqdm==4.67.1
+colorama==0.4.6
+
+# Type Checking (optional dev dependencies)
+mypy==1.13.0
+types-requests==2.32.0.20241016
+
+# Code Quality (optional dev dependencies)
+black==24.10.0
+flake8==7.1.1
+isort==5.13.2
+pre-commit==4.0.1
+
+# Additional dependencies that may be needed
+aiohttp==3.11.10
+typing-extensions==4.12.2

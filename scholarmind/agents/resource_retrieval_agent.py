@@ -1,5 +1,6 @@
 import json
 import time
+from pathlib import Path
 
 from agentscope.agent import ReActAgent
 from agentscope.formatter import OpenAIChatFormatter
@@ -21,6 +22,7 @@ from ..tools.paper_parser import parse_paper_tool
 
 
 class ResourceRetrievalAgent(ReActAgent):
+    """资源检索智能体 - 专门处理学术论文检索和解析"""
     def __init__(self, **kwargs):
         toolkit = Toolkit()
         toolkit.register_tool_function(parse_paper_tool)
@@ -31,7 +33,7 @@ class ResourceRetrievalAgent(ReActAgent):
         toolkit.register_tool_function(academic_get_reference_info_tool)
 
         super().__init__(
-            name="resource_retrieval_agent",
+            name="ResourceRetrievalAgent",
             sys_prompt=(
                 "You are a helpful assistant specialized in retrieving academic paper "
                 "resources. Parse papers, search academic databases for relevant "
@@ -48,17 +50,14 @@ class ResourceRetrievalAgent(ReActAgent):
         处理输入消息并返回结果
         """
         try:
-            agent_logger.debug(f"调试: reply方法开始，msg类型: {type(msg)}")
-            agent_logger.debug(f"调试: msg内容: {msg}")
             # 解析输入数据 - 支持字典或JSON字符串以保证兼容性
             if isinstance(msg.content, dict):
                 input_data = msg.content
             else:
                 input_data = json.loads(msg.content)
-            agent_logger.debug(f"调试: 解析后的输入数据: {input_data}")
+            
             paper_input = input_data.get("paper_input", "")
             input_type = input_data.get("input_type", "file")
-            agent_logger.debug(f"调试: paper_input: {paper_input}, input_type: {input_type}")
 
             # 执行论文解析
             start_time = time.time()
@@ -72,9 +71,8 @@ class ResourceRetrievalAgent(ReActAgent):
 
             try:
                 paper_content = parse_paper_tool(paper_input, input_type)
-                agent_logger.debug(f"调试: 直接调用parse_paper_tool成功, 类型: {type(paper_content)}")
             except Exception as e:
-                agent_logger.debug(f"调试: parse_paper_tool调用失败: {str(e)}")
+                agent_logger.error(f"parse_paper_tool调用失败: {str(e)}")
                 raise
 
             processing_info["tools_used"].append("parse_paper_tool")
@@ -85,10 +83,8 @@ class ResourceRetrievalAgent(ReActAgent):
             from ..models.structured_outputs import PaperContent
 
             if not isinstance(paper_content, PaperContent):
-                agent_logger.debug(f"调试: paper_content不是PaperContent对象，类型: {type(paper_content)}")
                 # 尝试从字典或其他格式转换
                 if isinstance(paper_content, dict) or (hasattr(paper_content, '__dict__') and not hasattr(paper_content, 'metadata')):
-                    agent_logger.debug(f"调试: 将paper_content转换为PaperContent对象")
                     from ..models.structured_outputs import PaperMetadata, PaperSection
 
                     # 如果是对象但不是dict，转换为dict
@@ -145,7 +141,6 @@ class ResourceRetrievalAgent(ReActAgent):
                         figures=paper_dict.get('figures', []),
                         tables=paper_dict.get('tables', [])
                     )
-                    agent_logger.debug(f"调试: 转换完成，paper_content类型: {type(paper_content)}")
 
             if paper_content:
                 agent_logger.info(f"论文标题: {paper_content.metadata.title}")
@@ -254,32 +249,26 @@ class ResourceRetrievalAgent(ReActAgent):
 
     def validate_input(self, paper_input: str, input_type: str) -> bool:
         """验证输入参数"""
-        if not paper_input:
-            return False
-
-        if input_type not in ["file", "url", "text"]:
+        if not paper_input or not paper_input.strip():
             return False
 
         if input_type == "file":
-            import os
-
-            return os.path.exists(paper_input)
-
-        if input_type == "url":
-            import re
-
-            url_pattern = re.compile(
-                r"^https?://"  # http:// or https://
-                r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|"  # domain...
-                r"localhost|"  # localhost...
-                r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # ...or ip
-                r"(?::\d+)?"  # optional port
-                r"(?:/?|[/?]\S+)$",
-                re.IGNORECASE,
-            )
-            return url_pattern.match(paper_input) is not None
-
-        return True
+            try:
+                # 使用Path对象处理中文路径
+                input_path = Path(paper_input)
+                return input_path.exists()
+            except Exception:
+                # 如果Path处理失败，回退到os.path
+                import os
+                return os.path.exists(paper_input)
+        elif input_type == "text":
+            # 文本输入只需检查非空
+            return len(paper_input.strip()) > 0
+        elif input_type == "url":
+            # URL验证 - 基本检查URL格式
+            return paper_input.startswith(("http://", "https://", "arxiv.org"))
+        else:
+            return False
 
     def get_supported_formats(self) -> dict:
         """获取支持的输入格式"""

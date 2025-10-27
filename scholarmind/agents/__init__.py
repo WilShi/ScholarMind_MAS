@@ -8,7 +8,7 @@ from .synthesizer_agent import SynthesizerAgent
 from .methodology_agent import MethodologyAgent
 from .experiment_evaluator_agent import ExperimentEvaluatorAgent
 from .insight_generation_agent import InsightGenerationAgent
-from .parameter_collection_agent import ParameterCollectionAgent
+from .runtime_agent import ScholarMindRuntimeAgent
 
 __all__ = [
     "ResourceRetrievalAgent",
@@ -16,6 +16,6 @@ __all__ = [
     "MethodologyAgent",
     "ExperimentEvaluatorAgent",
     "InsightGenerationAgent",
-    "ParameterCollectionAgent",
+    "ScholarMindRuntimeAgent",
 ]
 

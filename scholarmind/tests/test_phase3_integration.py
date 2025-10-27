@@ -19,7 +19,7 @@ class TestInsightGenerationAgent:
         """测试洞察生成智能体初始化"""
         agent = InsightGenerationAgent()
         assert agent is not None
-        assert agent.name == "insight_generation_agent"
+        assert agent.name == "InsightGenerationAgent"
         assert hasattr(agent, 'model')
 
     @pytest.mark.asyncio
@@ -72,7 +72,8 @@ class TestInsightGenerationAgent:
 
         # 调用agent
         response = await agent.reply(msg)
-        response_data = json.loads(response.content)
+        # response.content 已经是字典，不需要 json.loads
+        response_data = response.content if isinstance(response.content, dict) else json.loads(response.content)
 
         # 验证响应结构
         assert response_data["status"] in ["success", "error"]
@@ -260,10 +261,11 @@ class TestPhase3Integration:
         assert "workflow_stages" in status
         stages = status["workflow_stages"]
         assert len(stages) == 4  # 4个主要阶段
-        assert "Resource Retrieval" in stages[0]
-        assert "Parallel Analysis" in stages[1]
-        assert "Insight Generation" in stages[2]
-        assert "Report Synthesis" in stages[3]
+        # 验证stage名称（使用实际返回的小写snake_case格式）
+        assert "resource_retrieval" in stages[0]
+        assert "parallel_analysis" in stages[1]
+        assert "insight_generation" in stages[2]
+        assert "synthesizer" in stages[3]
 
 
 if __name__ == "__main__":

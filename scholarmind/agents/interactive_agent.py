@@ -32,8 +32,9 @@ class InteractiveScholarAgent(AgentBase):
         from scholarmind.tools.academic_search import academic_search_by_title_tool
 
         # 欢迎消息
-        welcome_msg = """╔═══════════════════════════════════════════════════════════╗
-║                  ScholarMind 智能论文助手                    ║
+        welcome_msg = """
+╔═══════════════════════════════════════════════════════════╗
+║                  ScholarMind 智能论文助手                   ║
 ╚═══════════════════════════════════════════════════════════╝
 
 您好！我是 ScholarMind 论文解读助手。

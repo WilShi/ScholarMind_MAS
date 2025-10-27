@@ -7,59 +7,36 @@ import json
 import time
 from typing import Dict, Any, Optional
 
-from agentscope.agent import AgentBase
 from agentscope.message import Msg
-from agentscope.model import OpenAIChatModel
 
-from config import get_model_config
+from ..agents.base_agent import ScholarMindAgentBase
 from ..utils.logger import agent_logger
 
 
-class InsightGenerationAgent(AgentBase):
+class InsightGenerationAgent(ScholarMindAgentBase):
     """洞察生成智能体 - 提供批判性分析和未来方向建议"""
 
     def __init__(self, **kwargs):
-        # Initialize parent class first
-        super().__init__(**kwargs)
-        # Set agent name
-        self.name = "insight_generation_agent"
-
-        # Get model configuration and initialize model wrapper
-        model_config = get_model_config()
-
-        # Initialize model wrapper using AgentScope's OpenAIChatModel
-        try:
-            self.model = OpenAIChatModel(
-                model_name=model_config.get("model_name"),
-                api_key=model_config.get("api_key"),
-                client_args=model_config.get("client_args", {}),
-                generate_kwargs={
-                    "temperature": model_config.get("temperature", 0.1),
-                    "max_tokens": model_config.get("max_tokens", 4000),
-                    "top_p": model_config.get("top_p", 0.9)
-                }
-            )
-            agent_logger.info(f"InsightGenerationAgent LLM模型已初始化: {model_config.get('model_name')}")
-        except Exception as e:
-            agent_logger.warning(f"Failed to initialize model for InsightGenerationAgent: {e}")
-            agent_logger.info("Will use fallback mode")
-            self.model = None
-
-        # Initialize system prompt
-        self.sys_prompt = "You are an expert in critical analysis of academic papers, providing deep insights and future research directions."
+        # Initialize base class with proper name parameter
+        super().__init__(
+            name="InsightGenerationAgent",
+            sys_prompt="You are an expert in generating critical insights and identifying limitations in academic research.",
+            **kwargs
+        )
 
     async def reply(self, msg: Msg) -> Msg:
         """
-        Process the input message and generate deep insights using LLM
+        使用基类的标准回复方法
+        """
+        return await super().reply(msg)
+
+    async def _process_logic(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        处理洞察生成逻辑（符合基类标准）
         """
         start_time = time.time()
-
+        
         try:
-            # 解析输入数据 - 支持字典或JSON字符串以保证兼容性
-            if isinstance(msg.content, dict):
-                input_data = msg.content
-            else:
-                input_data = json.loads(msg.content)
             paper_content = input_data.get("paper_content", {})
             output_language = input_data.get("output_language", "zh")
 
@@ -104,28 +81,16 @@ class InsightGenerationAgent(AgentBase):
                 response_data["success"] = True
                 response_data["error_message"] = None
 
-            response_content = {
-                "status": "success",
-                "data": response_data,
-                "message": "Insights generated successfully",
-            }
+            return response_data
 
-            # Create response message - 直接传递字典
-            response_msg = Msg(name=self.name, content=response_content, role="assistant")
-
-            return response_msg
         except Exception as e:
-            error_response = {
-                "status": "error",
-                "error": str(e),
-                "data": {
-                    "success": False,
-                    "error_message": str(e),
-                    "processing_time": time.time() - start_time,
-                }
+            agent_logger.error(f"洞察生成失败: {e}")
+            return {
+                "success": False,
+                "error_message": str(e),
+                "processing_time": time.time() - start_time if 'start_time' in locals() else 0,
             }
 
-            return Msg(name=self.name, content=error_response, role="assistant")
 
     def _build_insight_context(
         self,
@@ -218,7 +183,7 @@ Please provide a comprehensive critical analysis in JSON format with the followi
                 {"role": "user", "content": prompt}
             ]
 
-            agent_logger.debug("InsightGenerationAgent正在调用LLM生成洞察...")
+            agent_logger.info("InsightGenerationAgent正在调用LLM生成洞察...")
 
             # Await the async model call
             response = await self.model(messages)
@@ -281,7 +246,7 @@ Please provide a comprehensive critical analysis in JSON format with the followi
             }
         except Exception as e:
             agent_logger.error(f"LLM generation failed: {e}")
-            agent_logger.debug(f"Error type: {type(e).__name__}")
+            agent_logger.error(f"Error type: {type(e).__name__}")
             # Return structured fallback
             return {
                 "logical_flow": "Failed to generate LLM-based insights.",
